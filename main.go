@@ -33,7 +33,7 @@ func runVocab(word string) error {
 	}
 
 	// save mp3 to file
-	f, err := os.Create(fmt.Sprintf("%s.mp3", word))
+	f, err := os.Create(fmt.Sprintf("data/%s.mp3", word))
 	if err != nil {
 		return fmt.Errorf("create file: %w", err)
 	}

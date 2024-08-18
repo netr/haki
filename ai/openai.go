@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"log"
 	"strings"
 
 	"github.com/sashabaranov/go-openai"
@@ -110,7 +109,6 @@ func (m *OpenAIModel) ChooseDeck(deckNames []string, text string) (string, error
 		}
 	}
 
-	log.Printf("Result: %v\n", result)
 	return deckNames[0], nil
 }
 

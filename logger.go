@@ -113,8 +113,6 @@ func initLogger(cfg *LoggerConfig) error {
 		})
 	}
 
-	fmt.Println("logWriter", logWriter, "logHandler", logHandler)
-
 	slog.SetDefault(slog.New(logHandler))
 	return nil
 }

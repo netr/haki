@@ -7,7 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"net/http"
 	"time"
 )
@@ -104,7 +104,7 @@ func (c *Client) Send(action string, params interface{}) (ClientResponse, error)
 	}
 	defer func() {
 		if err := resp.Body.Close(); err != nil {
-			log.Printf("closing response body: %v", err)
+			slog.Error("closing response body", slog.String("error", err.Error()))
 		}
 	}()
 
