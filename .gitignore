@@ -10,3 +10,5 @@ data/*.txt
 
 coverage/
 bin/
+
+haki.json
