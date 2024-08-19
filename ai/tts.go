@@ -9,9 +9,15 @@ import (
 )
 
 type TTS interface {
+	// GenerateMP3 generates speech from text and returns the audio as an MP3 file.
 	GenerateMP3(text string) ([]byte, error)
+	// GenerateWav generates speech from text and returns the audio as a WAV file.
+	GenerateWav(text string) ([]byte, error)
+	// Generate speech from text. The voice and format can be specified. TODO: make this universal when we add more providers.
+	Generate(text string, voice openai.SpeechVoice, format openai.SpeechResponseFormat) ([]byte, error)
 }
 
+// TTSService is a service for generating text-to-speech audio.
 type TTSService struct {
 	OpenAIClient
 }

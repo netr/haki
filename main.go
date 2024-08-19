@@ -12,6 +12,7 @@ import (
 	"github.com/netr/haki/ai"
 	"github.com/netr/haki/anki"
 	"github.com/netr/haki/lib"
+	"github.com/sashabaranov/go-openai"
 	"github.com/urfave/cli/v2"
 )
 
@@ -35,7 +36,7 @@ func runTTS(word string) error {
 	}
 
 	ttsService := ai.NewTTSService(apiToken)
-	bytes, err := ttsService.GenerateMP3(word)
+	bytes, err := ttsService.Generate(word, openai.VoiceAlloy, openai.SpeechResponseFormatMp3)
 	if err != nil {
 		return fmt.Errorf("generate mp3: %w", err)
 	}

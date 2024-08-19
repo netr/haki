@@ -62,7 +62,7 @@ func NewOpenAICardCreator(apiKey string, modelType ...OpenAIModelName) (*OpenAIC
 }
 
 // ModelName returns the model name used by OpenAI.
-func (s *OpenAICardCreator) ModelName() Modeler {
+func (s *OpenAICardCreator) ModelName() ModelNamer {
 	return s.client.modelType
 }
 

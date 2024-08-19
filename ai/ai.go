@@ -19,8 +19,8 @@ const (
 	Anthropic APIProviderName = "anthropic"
 )
 
-// Modeler represents an AI model with a string representation.
-type Modeler interface {
+// ModelNamer represents an AI model with a string representation.
+type ModelNamer interface {
 	String() string
 }
 
@@ -31,19 +31,19 @@ type AICardCreator interface {
 	// Create generates Anki cards for the given deck and text.
 	Create(deckName string, text string) ([]AnkiCard, error)
 	// ModelName returns the model name used by the AI API provider.
-	ModelName() Modeler
+	ModelName() ModelNamer
 }
 
 // NewAICardCreator creates a new AICardCreator based on the given name and API key.
 // It optionally accepts a Modeler to specify the model type.
-func NewAICardCreator(name APIProviderName, apiKey string, modelType ...Modeler) (AICardCreator, error) {
+func NewAICardCreator(name APIProviderName, apiKey string, modelName ...ModelNamer) (AICardCreator, error) {
 	switch name {
 	case OpenAI:
-		if len(modelType) == 0 {
+		if len(modelName) == 0 {
 			return NewOpenAICardCreator(apiKey)
 		}
 
-		mt := modelType[0]
+		mt := modelName[0]
 		if !isValidOpenAIModelName(mt.String()) {
 			return nil, ErrInvalidOpenAIModel
 		}
