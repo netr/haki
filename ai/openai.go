@@ -14,12 +14,14 @@ var (
 	ErrInvalidOpenAIModel = errors.New("invalid openai model")
 )
 
-// OpenAIAPI wraps the OpenAI API client
+// OpenAIClient wraps the OpenAI API client
 type OpenAIClient struct {
 	client    *openai.Client
 	modelType OpenAIModelName
 }
 
+// NewOpenAIClient creates a new OpenAI API client with the given API key and an optional model type.
+// If no model type is provided, the default model is GPT4o20240806, which supports structured outputs.
 func NewOpenAIClient(apiKey string, modelType ...OpenAIModelName) *OpenAIClient {
 	mt := GPT4o20240806
 	if len(modelType) > 0 {
@@ -34,14 +36,17 @@ func NewOpenAIClient(apiKey string, modelType ...OpenAIModelName) *OpenAIClient 
 	}
 }
 
-func (api *OpenAIClient) CreateChatCompletion(ctx context.Context, request openai.ChatCompletionRequest) (openai.ChatCompletionResponse, error) {
+// createChatCompletion allows us to avoid having to call s.client.client.CreateChatCompletion.
+func (api *OpenAIClient) createChatCompletion(ctx context.Context, request openai.ChatCompletionRequest) (openai.ChatCompletionResponse, error) {
 	return api.client.CreateChatCompletion(ctx, request)
 }
 
+// OpenAICardCreator is an implementation of the AICardCreator interface for OpenAI.
 type OpenAICardCreator struct {
 	client *OpenAIClient
 }
 
+// NewOpenAICardCreator creates a new OpenAICardCreator with the given API key and an optional model type.
 func NewOpenAICardCreator(apiKey string, modelType ...OpenAIModelName) (*OpenAICardCreator, error) {
 	mt := GPT4o20240806
 	if len(modelType) > 0 {
@@ -56,16 +61,18 @@ func NewOpenAICardCreator(apiKey string, modelType ...OpenAIModelName) (*OpenAIC
 	return &OpenAICardCreator{client: client}, nil
 }
 
+// ModelName returns the model name used by OpenAI.
 func (s *OpenAICardCreator) ModelName() Modeler {
 	return s.client.modelType
 }
 
+// ChooseDeck uses the OpenAI API to select a deck based on provided deck names and text.
 func (s *OpenAICardCreator) ChooseDeck(deckNames []string, text string) (string, error) {
 	ctx := context.Background()
 
 	deckNameChoices := strings.Join(deckNames, ", ")
 
-	resp, err := s.client.CreateChatCompletion(
+	resp, err := s.client.createChatCompletion(
 		ctx,
 		openai.ChatCompletionRequest{
 			Model: s.ModelName().String(),
@@ -125,10 +132,11 @@ func (s *OpenAICardCreator) ChooseDeck(deckNames []string, text string) (string,
 	return result["Deck"], nil
 }
 
+// Create uses the OpenAI API to generate AnkiCard's (front and back) for the given deck and text.
 func (s *OpenAICardCreator) Create(deckName string, text string) ([]AnkiCard, error) {
 	ctx := context.Background()
 
-	resp, err := s.client.CreateChatCompletion(
+	resp, err := s.client.createChatCompletion(
 		ctx,
 		openai.ChatCompletionRequest{
 			Model:     s.ModelName().String(),
@@ -220,6 +228,7 @@ func (s *OpenAICardCreator) Create(deckName string, text string) ([]AnkiCard, er
 	}, nil
 }
 
+// isValidOpenAIModelName checks if the given model name is valid. Needs to be updated when new models are released.
 func isValidOpenAIModelName(name string) bool {
 	switch name {
 	case string(GPT432K0613):
@@ -251,6 +260,9 @@ func isValidOpenAIModelName(name string) bool {
 	case string(GPT3Curie):
 	case string(GPT3Curie002):
 	case string(GPT3Babbage002):
+	case string(TTSModel1):
+	case string(TTSModel1HD):
+	case string(TTSModelCanary):
 	default:
 		return false
 	}
