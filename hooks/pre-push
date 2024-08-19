@@ -1,0 +1,48 @@
+#!/bin/sh
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+NC='\033[0m' # No Color
+
+echo "${YELLOW}Running pre-push checks...${NC}"
+
+# Run tests
+echo "Running tests..."
+go test ./... -v
+if [ $? -ne 0 ]; then
+    echo "${RED}Tests failed. Please fix the failing tests before pushing.${NC}"
+    exit 1
+fi
+
+# Run full golangci-lint check
+if command -v golangci-lint >/dev/null 2>&1; then
+    echo "Running full golangci-lint check..."
+    golangci-lint run
+    if [ $? -ne 0 ]; then
+        echo "${RED}golangci-lint found issues. Please fix them before pushing.${NC}"
+        exit 1
+    fi
+else
+    echo "${YELLOW}golangci-lint not found. Skipping full linter checks.${NC}"
+    echo "${YELLOW}Consider installing golangci-lint for more thorough checks.${NC}"
+fi
+
+# Check if go.mod and go.sum are up to date
+echo "Checking if go.mod and go.sum are up to date..."
+go mod tidy
+if [ -n "$(git status --porcelain go.mod go.sum)" ]; then
+    echo "${RED}go.mod or go.sum are not up to date. Please run 'go mod tidy' and commit the changes.${NC}"
+    exit 1
+fi
+
+# Build the project
+echo "Building the project..."
+go build ./...
+if [ $? -ne 0 ]; then
+    echo "${RED}Build failed. Please fix the build errors before pushing.${NC}"
+    exit 1
+fi
+
+echo "${GREEN}All pre-push checks passed!${NC}"
+exit 0

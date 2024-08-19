@@ -1,0 +1,45 @@
+#!/bin/sh
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+NC='\033[0m' # No Color
+
+echo "${YELLOW}Running pre-commit checks...${NC}"
+
+# Check for go fmt
+echo "Checking formatting..."
+go_fmt_output=$(gofmt -l .)
+if [ -n "$go_fmt_output" ]; then
+    echo "${RED}Go files must be formatted with gofmt. Please run:${NC}"
+    echo "${YELLOW}  gofmt -w .${NC}"
+    echo "Affected files:"
+    echo "$go_fmt_output"
+    exit 1
+fi
+
+# Run go vet
+echo "Running go vet..."
+go vet ./... > /dev/null 2>&1
+if [ $? -ne 0 ]; then
+    echo "${RED}go vet found issues. Please fix them and try again.${NC}"
+    go vet ./...
+    exit 1
+fi
+
+# Run golangci-lint (if installed)
+if command -v golangci-lint >/dev/null 2>&1; then
+    echo "Running golangci-lint..."
+    golangci-lint run --fast --timeout 5m > /dev/null 2>&1
+    if [ $? -ne 0 ]; then
+        echo "${RED}golangci-lint found issues. Please fix them and try again.${NC}"
+        golangci-lint run --fast --timeout 5m
+        exit 1
+    fi
+else
+    echo "${YELLOW}golangci-lint not found. Skipping linter checks.${NC}"
+    echo "${YELLOW}Consider installing golangci-lint for more thorough checks.${NC}"
+fi
+
+echo "${GREEN}All pre-commit checks passed!${NC}"
+exit 0
