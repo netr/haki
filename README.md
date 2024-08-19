@@ -28,7 +28,7 @@ To set up the Git hooks for this project:
 1. Navigate to the project root.
 2. Run the following commands:
 ```bash
-ln -s ../../hooks/pre-commit .git/hooks/pre-commit
-ln -s ../../hooks/pre-push .git/hooks/pre-push
+ln -s ./hooks/pre-commit .git/hooks/pre-commit
+ln -s ./hooks/pre-push .git/hooks/pre-push
 chmod +x .git/hooks/pre-commit .git/hooks/pre-push
 ```
