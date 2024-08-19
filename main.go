@@ -58,15 +58,22 @@ func actionTTS(cCtx *cli.Context) error {
 	if word == "" {
 		return fmt.Errorf("word is required --word <word>")
 	}
+	// optional output file
+	output := cCtx.String("out")
+	if output != "" {
+		if err := lib.ValidateOutputPath(output); err != nil {
+			return fmt.Errorf("validate output path: %w", err)
+		}
+	}
 
-	if err := runTTS(word); err != nil {
+	if err := runTTS(word, output); err != nil {
 		slog.Error("run", slog.String("action", "tts"), slog.String("error", err.Error()))
 		return err
 	}
 	return nil
 }
 
-func runTTS(word string) error {
+func runTTS(word string, output string) error {
 	apiToken := os.Getenv("OPENAI_API_KEY")
 	if apiToken == "" {
 		return fmt.Errorf("OPENAI_API_KEY is not set")
@@ -82,11 +89,14 @@ func runTTS(word string) error {
 		return fmt.Errorf("generate mp3: %w", err)
 	}
 
-	if err = lib.SaveFile(fmt.Sprintf("data/%s.mp3", word), bytes); err != nil {
+	if output == "" {
+		output = fmt.Sprintf("data/%s.mp3", word)
+	}
+	if err = lib.SaveFile(output, bytes); err != nil {
 		return fmt.Errorf("save file: %w", err)
 	}
 
-	slog.Info("tts created", slog.String("word", word))
+	slog.Info("tts created", slog.String("word", word), slog.String("output", output))
 	return nil
 }
 
@@ -139,10 +149,18 @@ func main() {
 	}
 
 	wordFlag := &cli.StringFlag{
-		Name:    "word",
-		Aliases: []string{"w"},
+		Name:     "word",
+		Aliases:  []string{"w"},
+		Value:    "",
+		Required: true,
+		Usage:    "word to create a card for",
+	}
+
+	outFlag := &cli.StringFlag{
+		Name:    "out",
+		Aliases: []string{"o"},
 		Value:   "",
-		Usage:   "word to create a card for",
+		Usage:   "output file",
 	}
 
 	app := &cli.App{
@@ -158,22 +176,26 @@ func main() {
 		Compiled: time.Now(),
 		Commands: []*cli.Command{
 			{
-				Name:   "vocab",
-				Usage:  "create a vocabulary anki card",
-				Flags:  []cli.Flag{wordFlag},
-				Action: actionVocab,
+				Name:      "vocab",
+				Usage:     "Create a vocabulary Anki card using the specified word.",
+				ArgsUsage: "--word <word>",
+				Flags:     []cli.Flag{wordFlag},
+				Action:    actionVocab,
 			},
 			{
-				Name:   "tts",
-				Usage:  "create a tts mp3 for a word",
-				Flags:  []cli.Flag{wordFlag},
-				Action: actionTTS,
+				Name:      "tts",
+				Usage:     "Create a text-to-speech audio file for the specified word.",
+				ArgsUsage: "--word <word> [--out <output file>]",
+				Flags:     []cli.Flag{wordFlag, outFlag},
+				Action:    actionTTS,
 			},
 			{
-				Name:   "cardtest",
-				Usage:  "create a card for a word",
-				Flags:  []cli.Flag{wordFlag},
-				Action: actionCardTest,
+				Name:      "cardtest",
+				Usage:     "Test creating a card for the specified word.",
+				ArgsUsage: "--word <word>",
+				Flags:     []cli.Flag{wordFlag},
+				Action:    actionCardTest,
+				Aliases:   []string{"test"},
 			},
 		},
 	}
