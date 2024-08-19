@@ -29,13 +29,13 @@ func TestNewClient(t *testing.T) {
 			if client.HTTPClient() == nil {
 				t.Error("NewClient() httpClient is nil")
 			}
-			if client.Notes == nil {
+			if client.Notes() == nil {
 				t.Error("NewClient() Notes service is nil")
 			}
-			if client.ModelNames == nil {
+			if client.ModelNames() == nil {
 				t.Error("NewClient() ModelNames service is nil")
 			}
-			if client.DeckNames == nil {
+			if client.DeckNames() == nil {
 				t.Error("NewClient() DeckNames service is nil")
 			}
 		})

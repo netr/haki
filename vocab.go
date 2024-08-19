@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"path/filepath"
@@ -12,7 +13,7 @@ import (
 )
 
 type VocabularyEntity struct {
-	ankiClient   *anki.Client
+	ankiClient   anki.AnkiClienter
 	cardCreator  ai.AICardCreator
 	ttsService   ai.TTS
 	word         string
@@ -21,25 +22,29 @@ type VocabularyEntity struct {
 	cards        []ai.AnkiCard
 }
 
-func newVocabularyEntity(ankiClient *anki.Client, cardCreator ai.AICardCreator, ttsService ai.TTS, word string) *VocabularyEntity {
+func newVocabularyEntity(ankiClient anki.AnkiClienter, cardCreator ai.AICardCreator, ttsService ai.TTS) *VocabularyEntity {
 	v := &VocabularyEntity{
 		ankiClient:  ankiClient,
 		cardCreator: cardCreator,
 		ttsService:  ttsService,
-		word:        word,
 	}
 
 	return v
 }
 
-func (v *VocabularyEntity) Create() error {
-	if err := v.chooseDeck(); err != nil {
+func (v *VocabularyEntity) Create(ctx context.Context, word string) error {
+	if word == "" {
+		return fmt.Errorf("word is required")
+	}
+	v.word = word
+
+	if err := v.chooseDeck(ctx); err != nil {
 		return fmt.Errorf("choose deck: %w", err)
 	}
-	if err := v.createAnkiCards(); err != nil {
+	if err := v.createAnkiCards(ctx); err != nil {
 		return fmt.Errorf("create anki cards: %w", err)
 	}
-	if err := v.createTTS(); err != nil {
+	if err := v.createTTS(ctx); err != nil {
 		return fmt.Errorf("create tts: %w", err)
 	}
 
@@ -57,7 +62,7 @@ func (v *VocabularyEntity) Create() error {
 				"Front",
 			).Build()
 
-		id, err := v.ankiClient.Notes.Add(note)
+		id, err := v.ankiClient.Notes().Add(note)
 		if err != nil {
 			return fmt.Errorf("add note: %w", err)
 		}
@@ -71,8 +76,8 @@ func (v *VocabularyEntity) Create() error {
 	return nil
 }
 
-func (v *VocabularyEntity) createTTS() error {
-	mp3, err := v.ttsService.GenerateMP3(v.word)
+func (v *VocabularyEntity) createTTS(ctx context.Context) error {
+	mp3, err := v.ttsService.GenerateMP3(ctx, v.word)
 	if err != nil {
 		return fmt.Errorf("generate mp3: %w", err)
 	}
@@ -88,8 +93,9 @@ func (v *VocabularyEntity) createTTS() error {
 	return nil
 }
 
-func (v *VocabularyEntity) createAnkiCards() error {
+func (v *VocabularyEntity) createAnkiCards(ctx context.Context) error {
 	cards, err := v.cardCreator.Create(
+		ctx,
 		v.deckName,
 		"Create a vocabulary card (with parts of speech ONLY on front) for the word: "+v.word+".",
 	)
@@ -102,13 +108,13 @@ func (v *VocabularyEntity) createAnkiCards() error {
 	return nil
 }
 
-func (v *VocabularyEntity) chooseDeck() error {
+func (v *VocabularyEntity) chooseDeck(ctx context.Context) error {
 	decks, err := v.getVocabDecks("Vocabulary")
 	if err != nil {
 		return fmt.Errorf("get vocabulary deck names: %w", err)
 	}
 
-	deckName, err := v.cardCreator.ChooseDeck(decks, fmt.Sprintf("Which vocabulary deck should I use for the word: %s", v.word))
+	deckName, err := v.cardCreator.ChooseDeck(ctx, decks, fmt.Sprintf("Which vocabulary deck should I use for the word: %s", v.word))
 	if err != nil {
 		return fmt.Errorf("choose deck: %w", err)
 	}
@@ -119,7 +125,7 @@ func (v *VocabularyEntity) chooseDeck() error {
 }
 
 func (v *VocabularyEntity) getDecks() ([]string, error) {
-	deckNames, err := v.ankiClient.DeckNames.GetNames()
+	deckNames, err := v.ankiClient.DeckNames().GetNames()
 	if err != nil {
 		return nil, fmt.Errorf("get deck names: %w", err)
 	}

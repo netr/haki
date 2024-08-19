@@ -2,7 +2,10 @@
 
 package ai
 
-import "errors"
+import (
+	"context"
+	"errors"
+)
 
 // Error variables for common error cases.
 var (
@@ -19,31 +22,31 @@ const (
 	Anthropic APIProviderName = "anthropic"
 )
 
-// Modeler represents an AI model with a string representation.
-type Modeler interface {
+// ModelNamer represents an AI model with a string representation.
+type ModelNamer interface {
 	String() string
 }
 
 // AICardCreator defines the interface for AI API providers.
 type AICardCreator interface {
 	// ChooseDeck selects a deck based on provided deck names and text.
-	ChooseDeck(deckNames []string, text string) (string, error)
+	ChooseDeck(ctx context.Context, deckNames []string, text string) (string, error)
 	// Create generates Anki cards for the given deck and text.
-	Create(deckName string, text string) ([]AnkiCard, error)
+	Create(ctx context.Context, deckName string, text string) ([]AnkiCard, error)
 	// ModelName returns the model name used by the AI API provider.
-	ModelName() Modeler
+	ModelName() ModelNamer
 }
 
 // NewAICardCreator creates a new AICardCreator based on the given name and API key.
 // It optionally accepts a Modeler to specify the model type.
-func NewAICardCreator(name APIProviderName, apiKey string, modelType ...Modeler) (AICardCreator, error) {
+func NewAICardCreator(name APIProviderName, apiKey string, modelName ...ModelNamer) (AICardCreator, error) {
 	switch name {
 	case OpenAI:
-		if len(modelType) == 0 {
+		if len(modelName) == 0 {
 			return NewOpenAICardCreator(apiKey)
 		}
 
-		mt := modelType[0]
+		mt := modelName[0]
 		if !isValidOpenAIModelName(mt.String()) {
 			return nil, ErrInvalidOpenAIModel
 		}
@@ -57,6 +60,6 @@ func NewAICardCreator(name APIProviderName, apiKey string, modelType ...Modeler)
 
 // AnkiCard represents a single Anki flashcard with a front and back side.
 type AnkiCard struct {
-	Front string
-	Back  string
+	Front string // Front side of the card. `json:"front"`
+	Back  string // Back side of the card. `json:"back"`
 }

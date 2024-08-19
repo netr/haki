@@ -19,4 +19,16 @@ haki vocab --word "cacophony"
 - [x] Creates a TTS of the word using OpenAI's tts-1 model.
 - [ ] Automatically fetch the pronunciation of the word.
 
+## Development
 
+### Git Hooks
+
+To set up the Git hooks for this project:
+
+1. Navigate to the project root.
+2. Run the following commands:
+```bash
+ln -s ../../hooks/pre-commit .git/hooks/pre-commit
+ln -s ../../hooks/pre-push .git/hooks/pre-push
+chmod +x .git/hooks/pre-commit .git/hooks/pre-push
+```
