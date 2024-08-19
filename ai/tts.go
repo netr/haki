@@ -3,6 +3,7 @@ package ai
 import (
 	"context"
 	"fmt"
+	"io"
 
 	"github.com/sashabaranov/go-openai"
 )
@@ -17,7 +18,7 @@ type TTSService struct {
 }
 
 // NewTTSService creates a new TTS service with the given OpenAI API key.
-func NewTTSService(openAIApiKey string) *TTSService {
+func NewTTSService(openAIApiKey string) TTS {
 	client := openai.NewClient(openAIApiKey)
 
 	return &TTSService{
@@ -29,9 +30,9 @@ func NewTTSService(openAIApiKey string) *TTSService {
 // Generate speech from text. The voice and format can be specified.
 // We use the [pause] hack to prevent truncation of audio for some single-word strings.
 // https://community.openai.com/t/audio-speech-truncated-audio-for-some-single-word-strings/529924/4
-func (tts *TTSService) Generate(text string, voice openai.SpeechVoice, format openai.SpeechResponseFormat) (response openai.RawResponse, err error) {
+func (tts *TTSService) Generate(text string, voice openai.SpeechVoice, format openai.SpeechResponseFormat) ([]byte, error) {
 	ctx := context.Background()
-	return tts.client.CreateSpeech(
+	raw, err := tts.client.CreateSpeech(
 		ctx,
 		openai.CreateSpeechRequest{
 			Model:          openai.TTSModel1,
@@ -41,14 +42,24 @@ func (tts *TTSService) Generate(text string, voice openai.SpeechVoice, format op
 			Speed:          1,
 		},
 	)
+	if err != nil {
+		return nil, fmt.Errorf("create tts request: %w", err)
+	}
+
+	var bytes []byte
+	bytes, err = io.ReadAll(raw.ReadCloser)
+	if err != nil {
+		return nil, fmt.Errorf("read tts response: %w", err)
+	}
+	return bytes, nil
 }
 
 // GenerateMP3 generates speech from text and returns the audio as an MP3 file.
-func (tts *TTSService) GenerateMP3(text string) (response openai.RawResponse, err error) {
+func (tts *TTSService) GenerateMP3(text string) ([]byte, error) {
 	return tts.Generate(text, openai.VoiceAlloy, openai.SpeechResponseFormatMp3)
 }
 
 // GenerateWav generates speech from text and returns the audio as a WAV file.
-func (tts *TTSService) GenerateWav(text string) (response openai.RawResponse, err error) {
+func (tts *TTSService) GenerateWav(text string) ([]byte, error) {
 	return tts.Generate(text, openai.VoiceAlloy, openai.SpeechResponseFormatWav)
 }

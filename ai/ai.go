@@ -23,8 +23,8 @@ type Modeler interface {
 	String() string
 }
 
-// AIAPIProvider defines the interface for AI API providers.
-type AIAPIProvider interface {
+// APIProvider defines the interface for AI API providers.
+type APIProvider interface {
 	Action() CardCreator
 	ModelName() Modeler
 }
@@ -40,7 +40,7 @@ const (
 
 // NewAPIProvider creates a new AIAPIProvider based on the given name and API key.
 // It optionally accepts a Modeler to specify the model type.
-func NewAPIProvider(name APIProviderName, apiKey string, modelType ...Modeler) (AIAPIProvider, error) {
+func NewAPIProvider(name APIProviderName, apiKey string, modelType ...Modeler) (APIProvider, error) {
 	switch name {
 	case OpenAI:
 		if len(modelType) == 0 {
