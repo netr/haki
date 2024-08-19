@@ -1,16 +1,67 @@
-package main
+package cmd
 
 import (
 	"context"
 	"fmt"
 	"log/slog"
+	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/netr/haki/ai"
 	"github.com/netr/haki/anki"
 	"github.com/netr/haki/lib"
+	"github.com/urfave/cli/v2"
 )
+
+func NewVocabCommand() *cli.Command {
+	return &cli.Command{
+		Name:      "vocab",
+		Usage:     "Create a vocabulary Anki card using the specified word.",
+		ArgsUsage: "--word <word>",
+		Flags:     []cli.Flag{newWordFlag()},
+		Action:    actionVocab,
+	}
+}
+
+func actionVocab(cCtx *cli.Context) error {
+	word := cCtx.String("word")
+	if word == "" {
+		return fmt.Errorf("word is required --word <word>")
+	}
+
+	if err := runVocab(word); err != nil {
+		slog.Error("run", slog.String("action", "vocab"), slog.String("error", err.Error()))
+		return err
+	}
+	return nil
+}
+
+func runVocab(word string) error {
+	apiToken := os.Getenv("OPENAI_API_KEY")
+	if apiToken == "" {
+		return fmt.Errorf("OPENAI_API_KEY is not set")
+	}
+
+	ankiClient := anki.NewClient(lib.GetEnv("ANKI_CONNECT_URL", "http://localhost:8765"))
+	aiService, err := ai.NewAICardCreator(ai.OpenAI, apiToken)
+	if err != nil {
+		return fmt.Errorf("new openai api provider: %w", err)
+	}
+	ttsService := ai.NewTTSService(apiToken)
+
+	vocabEntity := newVocabularyEntity(ankiClient, aiService, ttsService)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+
+	if err := vocabEntity.Create(ctx, word); err != nil {
+		return fmt.Errorf("create vocab entity: %w", err)
+	}
+
+	return nil
+}
 
 type VocabularyEntity struct {
 	ankiClient   anki.AnkiClienter

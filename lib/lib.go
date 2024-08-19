@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 )
 
 // SaveFile saves data to a file
@@ -48,4 +49,24 @@ func ValidateOutputPath(output string) error {
 	file.Close()
 
 	return nil
+}
+
+func GetEnv(key string, defaultValue string) string {
+	value := os.Getenv(key)
+	if value == "" {
+		return defaultValue
+	}
+	return value
+}
+
+func GetEnvInt(key string, defaultValue int) int {
+	value := os.Getenv(key)
+	if value == "" {
+		return defaultValue
+	}
+	ivalue, err := strconv.Atoi(value)
+	if err != nil {
+		return defaultValue
+	}
+	return ivalue
 }

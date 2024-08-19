@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/lmittmann/tint"
+	"github.com/netr/haki/lib"
 )
 
 type LoggerConfig struct {
@@ -33,17 +34,17 @@ type LoggerFile struct {
 
 func newLoggerConfig(command string) *LoggerConfig {
 	return &LoggerConfig{
-		Level:     getEnv("LOG_LEVEL", "info"),
-		Format:    getEnv("LOG_FORMAT", "text"),
-		Output:    getEnv("LOG_OUTPUT", "stdout"),
-		DebugMode: getEnv("DEBUG_MODE", "false") == "true",
+		Level:     lib.GetEnv("LOG_LEVEL", "info"),
+		Format:    lib.GetEnv("LOG_FORMAT", "text"),
+		Output:    lib.GetEnv("LOG_OUTPUT", "stdout"),
+		DebugMode: lib.GetEnv("DEBUG_MODE", "false") == "true",
 		Command:   command,
 		File: LoggerFile{
-			Path:       getEnv("LOG_FILE_PATH", "./logs"),
-			Name:       getEnv("LOG_FILE_NAME", "app.log"),
-			MaxSize:    getEnvInt("LOG_FILE_MAX_SIZE", 100),
-			MaxBackups: getEnvInt("LOG_FILE_MAX_BACKUPS", 3),
-			MaxAge:     getEnvInt("LOG_FILE_MAX_AGE", 28),
+			Path:       lib.GetEnv("LOG_FILE_PATH", "./logs"),
+			Name:       lib.GetEnv("LOG_FILE_NAME", "app.log"),
+			MaxSize:    lib.GetEnvInt("LOG_FILE_MAX_SIZE", 100),
+			MaxBackups: lib.GetEnvInt("LOG_FILE_MAX_BACKUPS", 3),
+			MaxAge:     lib.GetEnvInt("LOG_FILE_MAX_AGE", 28),
 		},
 	}
 }
