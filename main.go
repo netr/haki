@@ -138,6 +138,13 @@ func main() {
 		log.Fatalf("failed initializing logger: %v", err)
 	}
 
+	wordFlag := &cli.StringFlag{
+		Name:    "word",
+		Aliases: []string{"w"},
+		Value:   "",
+		Usage:   "word to create a card for",
+	}
+
 	app := &cli.App{
 		Name:  "haki",
 		Usage: "haki is a tool to help you create anki cards using AI and AnkiConnect",
@@ -151,42 +158,21 @@ func main() {
 		Compiled: time.Now(),
 		Commands: []*cli.Command{
 			{
-				Name:  "vocab",
-				Usage: "create a vocabulary anki card",
-				Flags: []cli.Flag{
-					&cli.StringFlag{
-						Name:    "word",
-						Aliases: []string{"w"},
-						Value:   "",
-						Usage:   "word to create a card for",
-					},
-				},
+				Name:   "vocab",
+				Usage:  "create a vocabulary anki card",
+				Flags:  []cli.Flag{wordFlag},
 				Action: actionVocab,
 			},
 			{
-				Name:  "tts",
-				Usage: "create a tts mp3 for a word",
-				Flags: []cli.Flag{
-					&cli.StringFlag{
-						Name:    "word",
-						Aliases: []string{"w"},
-						Value:   "",
-						Usage:   "word to create a card for",
-					},
-				},
+				Name:   "tts",
+				Usage:  "create a tts mp3 for a word",
+				Flags:  []cli.Flag{wordFlag},
 				Action: actionTTS,
 			},
 			{
-				Name:  "cardtest",
-				Usage: "create a card for a word",
-				Flags: []cli.Flag{
-					&cli.StringFlag{
-						Name:    "word",
-						Aliases: []string{"w"},
-						Value:   "",
-						Usage:   "word to create a card for",
-					},
-				},
+				Name:   "cardtest",
+				Usage:  "create a card for a word",
+				Flags:  []cli.Flag{wordFlag},
 				Action: actionCardTest,
 			},
 		},
