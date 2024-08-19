@@ -25,20 +25,14 @@ type NoteParams struct {
 
 // Note represents an Anki note
 type Note struct {
-	DeckName  string      `json:"deckName"`
-	ModelName string      `json:"modelName"`
-	Fields    NoteFields  `json:"fields"`
-	Options   NoteOptions `json:"2options"`
-	Tags      []string    `json:"tags"`
-	Audio     []NoteMedia `json:"audio"`
-	Video     []NoteMedia `json:"video"`
-	Picture   []NoteMedia `json:"picture"`
-}
-
-// NoteFields represents the fields of an Anki note
-type NoteFields struct {
-	Front string `json:"Front"`
-	Back  string `json:"Back"`
+	DeckName  string                 `json:"deckName"`
+	ModelName string                 `json:"modelName"`
+	Fields    map[string]interface{} `json:"fields"`
+	Options   NoteOptions            `json:"2options"`
+	Tags      []string               `json:"tags"`
+	Audio     []NoteMedia            `json:"audio"`
+	Video     []NoteMedia            `json:"video"`
+	Picture   []NoteMedia            `json:"picture"`
 }
 
 // NoteOptions represents the options for adding a note
@@ -57,6 +51,7 @@ type DuplicateScopeOptions struct {
 
 // NoteMedia represents media (audio, video, picture) attached to a note
 type NoteMedia struct {
+	Path     string   `json:"path"`
 	URL      string   `json:"url"`
 	Filename string   `json:"filename"`
 	SkipHash string   `json:"skipHash"`
@@ -69,15 +64,12 @@ type NoteBuilder struct {
 }
 
 // NewNoteBuilder creates a new NoteBuilder with minimum required fields and sensible defaults
-func NewNoteBuilder(deckName, modelName, front, back string) *NoteBuilder {
+func NewNoteBuilder(deckName, modelName string, fields map[string]interface{}) *NoteBuilder {
 	return &NoteBuilder{
 		note: Note{
 			DeckName:  deckName,
 			ModelName: modelName,
-			Fields: NoteFields{
-				Front: front,
-				Back:  back,
-			},
+			Fields:    fields,
 			Options: NoteOptions{
 				AllowDuplicate: false,
 				DuplicateScope: "deck",
@@ -99,9 +91,9 @@ func (nb *NoteBuilder) WithTags(tags ...string) *NoteBuilder {
 }
 
 // WithAudio adds an audio file to the note
-func (nb *NoteBuilder) WithAudio(url, filename string, fields ...string) *NoteBuilder {
+func (nb *NoteBuilder) WithAudio(path, filename string, fields ...string) *NoteBuilder {
 	nb.note.Audio = append(nb.note.Audio, NoteMedia{
-		URL:      url,
+		Path:     path,
 		Filename: filename,
 		Fields:   fields,
 	})

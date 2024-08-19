@@ -2,6 +2,7 @@ package ai
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/sashabaranov/go-openai"
 )
@@ -24,16 +25,30 @@ func NewTTSService(apiKey string) *TTSService {
 	}
 }
 
+func (tts *TTSService) Generate(text string, voice openai.SpeechVoice, format openai.SpeechResponseFormat) (response openai.RawResponse, err error) {
+	ctx := context.Background()
+	return tts.client.CreateSpeech(
+		ctx,
+		openai.CreateSpeechRequest{
+			Model:          openai.TTSModel1,
+			Input:          fmt.Sprintf("\n[pause]\n%s", text),
+			Voice:          voice,
+			ResponseFormat: format,
+			Speed:          1,
+		},
+	)
+}
+
 func (tts *TTSService) GenerateMP3(text string) (response openai.RawResponse, err error) {
 	ctx := context.Background()
 	return tts.client.CreateSpeech(
 		ctx,
 		openai.CreateSpeechRequest{
-			Model:          openai.TTSModel1HD,
-			Input:          text,
-			Voice:          openai.VoiceNova,
+			Model:          openai.TTSModel1,
+			Input:          fmt.Sprintf("\n[pause]\n%s", text),
+			Voice:          openai.VoiceAlloy,
 			ResponseFormat: openai.SpeechResponseFormatMp3,
-			Speed:          0.8,
+			Speed:          1,
 		},
 	)
 }
