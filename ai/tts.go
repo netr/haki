@@ -10,11 +10,11 @@ import (
 
 type TTS interface {
 	// GenerateMP3 generates speech from text and returns the audio as an MP3 file.
-	GenerateMP3(text string) ([]byte, error)
+	GenerateMP3(ctx context.Context, text string) ([]byte, error)
 	// GenerateWav generates speech from text and returns the audio as a WAV file.
-	GenerateWav(text string) ([]byte, error)
+	GenerateWav(ctx context.Context, text string) ([]byte, error)
 	// Generate speech from text. The voice and format can be specified. TODO: make this universal when we add more providers.
-	Generate(text string, voice openai.SpeechVoice, format openai.SpeechResponseFormat) ([]byte, error)
+	Generate(ctx context.Context, text string, voice openai.SpeechVoice, format openai.SpeechResponseFormat) ([]byte, error)
 }
 
 // TTSService is a service for generating text-to-speech audio.
@@ -32,8 +32,7 @@ func NewTTSService(openAIApiKey string) TTS {
 // Generate speech from text. The voice and format can be specified.
 // We use the [pause] hack to prevent truncation of audio for some single-word strings.
 // https://community.openai.com/t/audio-speech-truncated-audio-for-some-single-word-strings/529924/4
-func (tts *TTSService) Generate(text string, voice openai.SpeechVoice, format openai.SpeechResponseFormat) ([]byte, error) {
-	ctx := context.Background()
+func (tts *TTSService) Generate(ctx context.Context, text string, voice openai.SpeechVoice, format openai.SpeechResponseFormat) ([]byte, error) {
 	raw, err := tts.client.CreateSpeech(
 		ctx,
 		openai.CreateSpeechRequest{
@@ -57,11 +56,11 @@ func (tts *TTSService) Generate(text string, voice openai.SpeechVoice, format op
 }
 
 // GenerateMP3 generates speech from text and returns the audio as an MP3 file.
-func (tts *TTSService) GenerateMP3(text string) ([]byte, error) {
-	return tts.Generate(text, openai.VoiceAlloy, openai.SpeechResponseFormatMp3)
+func (tts *TTSService) GenerateMP3(ctx context.Context, text string) ([]byte, error) {
+	return tts.Generate(ctx, text, openai.VoiceAlloy, openai.SpeechResponseFormatMp3)
 }
 
 // GenerateWav generates speech from text and returns the audio as a WAV file.
-func (tts *TTSService) GenerateWav(text string) ([]byte, error) {
-	return tts.Generate(text, openai.VoiceAlloy, openai.SpeechResponseFormatWav)
+func (tts *TTSService) GenerateWav(ctx context.Context, text string) ([]byte, error) {
+	return tts.Generate(ctx, text, openai.VoiceAlloy, openai.SpeechResponseFormatWav)
 }

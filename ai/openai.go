@@ -67,9 +67,7 @@ func (s *OpenAICardCreator) ModelName() ModelNamer {
 }
 
 // ChooseDeck uses the OpenAI API to select a deck based on provided deck names and text.
-func (s *OpenAICardCreator) ChooseDeck(deckNames []string, text string) (string, error) {
-	ctx := context.Background()
-
+func (s *OpenAICardCreator) ChooseDeck(ctx context.Context, deckNames []string, text string) (string, error) {
 	deckNameChoices := strings.Join(deckNames, ", ")
 
 	resp, err := s.client.createChatCompletion(
@@ -133,14 +131,12 @@ func (s *OpenAICardCreator) ChooseDeck(deckNames []string, text string) (string,
 }
 
 // Create uses the OpenAI API to generate AnkiCard's (front and back) for the given deck and text.
-func (s *OpenAICardCreator) Create(deckName string, text string) ([]AnkiCard, error) {
-	ctx := context.Background()
-
+func (s *OpenAICardCreator) Create(ctx context.Context, deckName string, text string) ([]AnkiCard, error) {
 	resp, err := s.client.createChatCompletion(
 		ctx,
 		openai.ChatCompletionRequest{
 			Model:     s.ModelName().String(),
-			MaxTokens: 2048,
+			MaxTokens: 4096,
 			Messages: []openai.ChatCompletionMessage{
 				{
 					Role: openai.ChatMessageRoleSystem,
@@ -185,14 +181,25 @@ func (s *OpenAICardCreator) Create(deckName string, text string) ([]AnkiCard, er
 						Parameters: &jsonschema.Definition{
 							Type: jsonschema.Object,
 							Properties: map[string]jsonschema.Definition{
-								"Front": {
-									Type: jsonschema.String,
-								},
-								"Back": {
-									Type: jsonschema.String,
+								"cards": {
+									Type: jsonschema.Array,
+									Items: &jsonschema.Definition{
+										Type: jsonschema.Object,
+										Properties: map[string]jsonschema.Definition{
+											"front": {
+												Type: jsonschema.String,
+											},
+											"back": {
+												Type: jsonschema.String,
+											},
+										},
+										AdditionalProperties: false,
+										Required:             []string{"front", "back"},
+									},
+									AdditionalProperties: false,
 								},
 							},
-							Required:             []string{"Front", "Back"},
+							Required:             []string{"cards"},
 							AdditionalProperties: false,
 						},
 					},
@@ -210,22 +217,17 @@ func (s *OpenAICardCreator) Create(deckName string, text string) ([]AnkiCard, er
 		return nil, err
 	}
 
-	var result = make(map[string]string)
-	err = json.Unmarshal([]byte(resp.Choices[0].Message.ToolCalls[0].Function.Arguments), &result)
+	var data createAnkiCardsData
+	err = json.Unmarshal([]byte(resp.Choices[0].Message.ToolCalls[0].Function.Arguments), &data)
 	if err != nil {
 		return nil, err
 	}
-	for _, key := range []string{"Front", "Back"} {
-		if _, ok := result[key]; !ok {
-			return nil, errors.New("missing key: " + key)
-		}
-	}
-	return []AnkiCard{
-		{
-			Front: result["Front"],
-			Back:  result["Back"],
-		},
-	}, nil
+
+	return data.Cards, nil
+}
+
+type createAnkiCardsData struct {
+	Cards []AnkiCard `json:"cards"`
 }
 
 // isValidOpenAIModelName checks if the given model name is valid. Needs to be updated when new models are released.

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"path/filepath"
@@ -32,14 +33,14 @@ func newVocabularyEntity(ankiClient *anki.Client, cardCreator ai.AICardCreator, 
 	return v
 }
 
-func (v *VocabularyEntity) Create() error {
-	if err := v.chooseDeck(); err != nil {
+func (v *VocabularyEntity) Create(ctx context.Context) error {
+	if err := v.chooseDeck(ctx); err != nil {
 		return fmt.Errorf("choose deck: %w", err)
 	}
-	if err := v.createAnkiCards(); err != nil {
+	if err := v.createAnkiCards(ctx); err != nil {
 		return fmt.Errorf("create anki cards: %w", err)
 	}
-	if err := v.createTTS(); err != nil {
+	if err := v.createTTS(ctx); err != nil {
 		return fmt.Errorf("create tts: %w", err)
 	}
 
@@ -71,8 +72,8 @@ func (v *VocabularyEntity) Create() error {
 	return nil
 }
 
-func (v *VocabularyEntity) createTTS() error {
-	mp3, err := v.ttsService.GenerateMP3(v.word)
+func (v *VocabularyEntity) createTTS(ctx context.Context) error {
+	mp3, err := v.ttsService.GenerateMP3(ctx, v.word)
 	if err != nil {
 		return fmt.Errorf("generate mp3: %w", err)
 	}
@@ -88,8 +89,9 @@ func (v *VocabularyEntity) createTTS() error {
 	return nil
 }
 
-func (v *VocabularyEntity) createAnkiCards() error {
+func (v *VocabularyEntity) createAnkiCards(ctx context.Context) error {
 	cards, err := v.cardCreator.Create(
+		ctx,
 		v.deckName,
 		"Create a vocabulary card (with parts of speech ONLY on front) for the word: "+v.word+".",
 	)
@@ -102,13 +104,13 @@ func (v *VocabularyEntity) createAnkiCards() error {
 	return nil
 }
 
-func (v *VocabularyEntity) chooseDeck() error {
+func (v *VocabularyEntity) chooseDeck(ctx context.Context) error {
 	decks, err := v.getVocabDecks("Vocabulary")
 	if err != nil {
 		return fmt.Errorf("get vocabulary deck names: %w", err)
 	}
 
-	deckName, err := v.cardCreator.ChooseDeck(decks, fmt.Sprintf("Which vocabulary deck should I use for the word: %s", v.word))
+	deckName, err := v.cardCreator.ChooseDeck(ctx, decks, fmt.Sprintf("Which vocabulary deck should I use for the word: %s", v.word))
 	if err != nil {
 		return fmt.Errorf("choose deck: %w", err)
 	}

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"log/slog"
@@ -16,6 +17,42 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
+func actionCardTest(cCtx *cli.Context) error {
+	word := cCtx.String("word")
+	if word == "" {
+		return fmt.Errorf("word is required --word <word>")
+	}
+
+	if err := runCardTest(word); err != nil {
+		slog.Error("run", slog.String("action", "card_test"), slog.String("error", err.Error()))
+		return err
+	}
+	return nil
+}
+
+func runCardTest(word string) error {
+	apiToken := os.Getenv("OPENAI_API_KEY")
+	if apiToken == "" {
+		return fmt.Errorf("OPENAI_API_KEY is not set")
+	}
+
+	oa, err := ai.NewOpenAICardCreator(apiToken)
+	if err != nil {
+		return fmt.Errorf("new openai card creator: %w", err)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	ans, err := oa.Create(ctx, "test", word)
+	if err != nil {
+		return fmt.Errorf("create card: %w", err)
+	}
+
+	fmt.Println(ans)
+	return nil
+}
+
 func actionTTS(cCtx *cli.Context) error {
 	word := cCtx.String("word")
 	if word == "" {
@@ -23,7 +60,7 @@ func actionTTS(cCtx *cli.Context) error {
 	}
 
 	if err := runTTS(word); err != nil {
-		slog.Error("run", slog.String("error", err.Error()))
+		slog.Error("run", slog.String("action", "tts"), slog.String("error", err.Error()))
 		return err
 	}
 	return nil
@@ -36,7 +73,11 @@ func runTTS(word string) error {
 	}
 
 	ttsService := ai.NewTTSService(apiToken)
-	bytes, err := ttsService.Generate(word, openai.VoiceAlloy, openai.SpeechResponseFormatMp3)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	bytes, err := ttsService.Generate(ctx, word, openai.VoiceAlloy, openai.SpeechResponseFormatMp3)
 	if err != nil {
 		return fmt.Errorf("generate mp3: %w", err)
 	}
@@ -56,7 +97,7 @@ func actionVocab(cCtx *cli.Context) error {
 	}
 
 	if err := runVocab(word); err != nil {
-		slog.Error("run", slog.String("error", err.Error()))
+		slog.Error("run", slog.String("action", "vocab"), slog.String("error", err.Error()))
 		return err
 	}
 	return nil
@@ -76,7 +117,11 @@ func runVocab(word string) error {
 	ttsService := ai.NewTTSService(apiToken)
 
 	vocabEntity := newVocabularyEntity(ankiClient, aiService, ttsService, word)
-	if err := vocabEntity.Create(); err != nil {
+
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+
+	if err := vocabEntity.Create(ctx); err != nil {
 		return fmt.Errorf("create vocab entity: %w", err)
 	}
 
@@ -130,6 +175,19 @@ func main() {
 					},
 				},
 				Action: actionTTS,
+			},
+			{
+				Name:  "cardtest",
+				Usage: "create a card for a word",
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:    "word",
+						Aliases: []string{"w"},
+						Value:   "",
+						Usage:   "word to create a card for",
+					},
+				},
+				Action: actionCardTest,
 			},
 		},
 	}
