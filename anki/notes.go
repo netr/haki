@@ -50,6 +50,7 @@ type DuplicateScopeOptions struct {
 }
 
 // NoteMedia represents media (audio, video, picture) attached to a note
+// TODO: Path and URL are mutually exclusive, but we can't enforce that in Go. Create a better way of handling this and propagate the change to the API
 type NoteMedia struct {
 	Path     string   `json:"path"`
 	URL      string   `json:"url"`

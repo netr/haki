@@ -1,13 +1,14 @@
 package anki_test
 
 import (
-	"github.com/netr/haki/anki"
 	"reflect"
 	"testing"
+
+	"github.com/netr/haki/anki"
 )
 
 func TestNewNoteBuilder(t *testing.T) {
-	builder := anki.NewNoteBuilder("TestDeck", "BasicModel", "Front Content", "Back Content")
+	builder := anki.NewNoteBuilder("TestDeck", "BasicModel", map[string]interface{}{"Front": "Front Content", "Back": "Back Content"})
 	note := builder.Build()
 
 	if note.DeckName != "TestDeck" {
@@ -16,11 +17,11 @@ func TestNewNoteBuilder(t *testing.T) {
 	if note.ModelName != "BasicModel" {
 		t.Errorf("Expected ModelName to be 'BasicModel', got '%s'", note.ModelName)
 	}
-	if note.Fields.Front != "Front Content" {
-		t.Errorf("Expected Front field to be 'Front Content', got '%s'", note.Fields.Front)
+	if note.Fields["Front"] != "Front Content" {
+		t.Errorf("Expected Front field to be 'Front Content', got '%s'", note.Fields["Front"])
 	}
-	if note.Fields.Back != "Back Content" {
-		t.Errorf("Expected Back field to be 'Back Content', got '%s'", note.Fields.Back)
+	if note.Fields["Back"] != "Back Content" {
+		t.Errorf("Expected Back field to be 'Back Content', got '%s'", note.Fields["Back"])
 	}
 	if note.Options.AllowDuplicate != false {
 		t.Errorf("Expected AllowDuplicate to be false by default")
@@ -34,7 +35,7 @@ func TestNewNoteBuilder(t *testing.T) {
 }
 
 func TestWithTags(t *testing.T) {
-	builder := anki.NewNoteBuilder("TestDeck", "BasicModel", "Front", "Back").
+	builder := anki.NewNoteBuilder("TestDeck", "BasicModel", map[string]interface{}{"Front": "Front Content", "Back": "Back Content"}).
 		WithTags("tag1", "tag2")
 	note := builder.Build()
 
@@ -45,7 +46,7 @@ func TestWithTags(t *testing.T) {
 }
 
 func TestWithAudio(t *testing.T) {
-	builder := anki.NewNoteBuilder("TestDeck", "BasicModel", "Front", "Back").
+	builder := anki.NewNoteBuilder("TestDeck", "BasicModel", map[string]interface{}{"Front": "Front Content", "Back": "Back Content"}).
 		WithAudio("http://example.com/audio.mp3", "audio.mp3", "Back")
 	note := builder.Build()
 
@@ -53,8 +54,8 @@ func TestWithAudio(t *testing.T) {
 		t.Fatalf("Expected 1 audio file, got %d", len(note.Audio))
 	}
 	audio := note.Audio[0]
-	if audio.URL != "http://example.com/audio.mp3" {
-		t.Errorf("Expected audio URL to be 'http://example.com/audio.mp3', got '%s'", audio.URL)
+	if audio.Path != "http://example.com/audio.mp3" {
+		t.Errorf("Expected audio Path to be 'http://example.com/audio.mp3', got '%s'", audio.URL)
 	}
 	if audio.Filename != "audio.mp3" {
 		t.Errorf("Expected audio filename to be 'audio.mp3', got '%s'", audio.Filename)
@@ -65,7 +66,7 @@ func TestWithAudio(t *testing.T) {
 }
 
 func TestWithVideo(t *testing.T) {
-	builder := anki.NewNoteBuilder("TestDeck", "BasicModel", "Front", "Back").
+	builder := anki.NewNoteBuilder("TestDeck", "BasicModel", map[string]interface{}{"Front": "Front Content", "Back": "Back Content"}).
 		WithVideo("http://example.com/video.mp4", "video.mp4", "Front")
 	note := builder.Build()
 
@@ -85,7 +86,7 @@ func TestWithVideo(t *testing.T) {
 }
 
 func TestWithPicture(t *testing.T) {
-	builder := anki.NewNoteBuilder("TestDeck", "BasicModel", "Front", "Back").
+	builder := anki.NewNoteBuilder("TestDeck", "BasicModel", map[string]interface{}{"Front": "Front Content", "Back": "Back Content"}).
 		WithPicture("http://example.com/image.jpg", "image.jpg", "Front", "Back")
 	note := builder.Build()
 
@@ -105,7 +106,7 @@ func TestWithPicture(t *testing.T) {
 }
 
 func TestAllowDuplicate(t *testing.T) {
-	builder := anki.NewNoteBuilder("TestDeck", "BasicModel", "Front", "Back").
+	builder := anki.NewNoteBuilder("TestDeck", "BasicModel", map[string]interface{}{"Front": "Front Content", "Back": "Back Content"}).
 		AllowDuplicate(true)
 	note := builder.Build()
 
@@ -115,7 +116,7 @@ func TestAllowDuplicate(t *testing.T) {
 }
 
 func TestSetDuplicateScope(t *testing.T) {
-	builder := anki.NewNoteBuilder("TestDeck", "BasicModel", "Front", "Back").
+	builder := anki.NewNoteBuilder("TestDeck", "BasicModel", map[string]interface{}{"Front": "Front Content", "Back": "Back Content"}).
 		SetDuplicateScope("collection")
 	note := builder.Build()
 
@@ -125,7 +126,7 @@ func TestSetDuplicateScope(t *testing.T) {
 }
 
 func TestMultipleMediaAdditions(t *testing.T) {
-	builder := anki.NewNoteBuilder("TestDeck", "BasicModel", "Front", "Back").
+	builder := anki.NewNoteBuilder("TestDeck", "BasicModel", map[string]interface{}{"Front": "Front Content", "Back": "Back Content"}).
 		WithAudio("http://example.com/audio1.mp3", "audio1.mp3", "Back").
 		WithAudio("http://example.com/audio2.mp3", "audio2.mp3", "Front").
 		WithVideo("http://example.com/video1.mp4", "video1.mp4", "Front").
@@ -146,16 +147,16 @@ func TestMultipleMediaAdditions(t *testing.T) {
 // Edge case tests
 
 func TestEmptyFields(t *testing.T) {
-	builder := anki.NewNoteBuilder("TestDeck", "BasicModel", "", "")
+	builder := anki.NewNoteBuilder("TestDeck", "BasicModel", map[string]interface{}{"Front": "", "Back": ""})
 	note := builder.Build()
 
-	if note.Fields.Front != "" || note.Fields.Back != "" {
+	if note.Fields["Front"] != "" || note.Fields["Back"] != "" {
 		t.Errorf("Expected empty Front and Back fields")
 	}
 }
 
 func TestDuplicateScepparams(t *testing.T) {
-	builder := anki.NewNoteBuilder("TestDeck", "BasicModel", "Front", "Back").
+	builder := anki.NewNoteBuilder("TestDeck", "BasicModel", map[string]interface{}{"Front": "Front Content", "Back": "Back Content"}).
 		SetDuplicateScope("invalid_scope")
 	note := builder.Build()
 
@@ -165,7 +166,7 @@ func TestDuplicateScepparams(t *testing.T) {
 }
 
 func TestMultipleTagAdditions(t *testing.T) {
-	builder := anki.NewNoteBuilder("TestDeck", "BasicModel", "Front", "Back").
+	builder := anki.NewNoteBuilder("TestDeck", "BasicModel", map[string]interface{}{"Front": "Front Content", "Back": "Back Content"}).
 		WithTags("tag1", "tag2").
 		WithTags("tag3")
 	note := builder.Build()
@@ -177,7 +178,7 @@ func TestMultipleTagAdditions(t *testing.T) {
 }
 
 func TestMediaWithNoFields(t *testing.T) {
-	builder := anki.NewNoteBuilder("TestDeck", "BasicModel", "Front", "Back").
+	builder := anki.NewNoteBuilder("TestDeck", "BasicModel", map[string]interface{}{"Front": "Front Content", "Back": "Back Content"}).
 		WithAudio("http://example.com/audio.mp3", "audio.mp3")
 	note := builder.Build()
 

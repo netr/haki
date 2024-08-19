@@ -2,11 +2,12 @@ package anki_test
 
 import (
 	"encoding/json"
-	"github.com/netr/haki/anki"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
+
+	"github.com/netr/haki/anki"
 )
 
 func TestNewClient(t *testing.T) {
@@ -89,7 +90,10 @@ func TestClient_Send(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				w.Header().Set("Content-Type", "application/json")
-				w.Write([]byte(tt.serverResponse))
+				_, err := w.Write([]byte(tt.serverResponse))
+				if err != nil {
+					t.Fatalf("Failed to write response: %v", err)
+				}
 			}))
 			defer server.Close()
 
