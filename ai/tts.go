@@ -12,19 +12,23 @@ type TTS interface {
 }
 
 type TTSService struct {
-	apiKey string
-	client *openai.Client
+	openAIApiKey string
+	client       *openai.Client
 }
 
-func NewTTSService(apiKey string) *TTSService {
-	client := openai.NewClient(apiKey)
+// NewTTSService creates a new TTS service with the given OpenAI API key.
+func NewTTSService(openAIApiKey string) *TTSService {
+	client := openai.NewClient(openAIApiKey)
 
 	return &TTSService{
-		apiKey: apiKey,
-		client: client,
+		openAIApiKey: openAIApiKey,
+		client:       client,
 	}
 }
 
+// Generate speech from text. The voice and format can be specified.
+// We use the [pause] hack to prevent truncation of audio for some single-word strings.
+// https://community.openai.com/t/audio-speech-truncated-audio-for-some-single-word-strings/529924/4
 func (tts *TTSService) Generate(text string, voice openai.SpeechVoice, format openai.SpeechResponseFormat) (response openai.RawResponse, err error) {
 	ctx := context.Background()
 	return tts.client.CreateSpeech(
@@ -39,16 +43,12 @@ func (tts *TTSService) Generate(text string, voice openai.SpeechVoice, format op
 	)
 }
 
+// GenerateMP3 generates speech from text and returns the audio as an MP3 file.
 func (tts *TTSService) GenerateMP3(text string) (response openai.RawResponse, err error) {
-	ctx := context.Background()
-	return tts.client.CreateSpeech(
-		ctx,
-		openai.CreateSpeechRequest{
-			Model:          openai.TTSModel1,
-			Input:          fmt.Sprintf("\n[pause]\n%s", text),
-			Voice:          openai.VoiceAlloy,
-			ResponseFormat: openai.SpeechResponseFormatMp3,
-			Speed:          1,
-		},
-	)
+	return tts.Generate(text, openai.VoiceAlloy, openai.SpeechResponseFormatMp3)
+}
+
+// GenerateWav generates speech from text and returns the audio as a WAV file.
+func (tts *TTSService) GenerateWav(text string) (response openai.RawResponse, err error) {
+	return tts.Generate(text, openai.VoiceAlloy, openai.SpeechResponseFormatWav)
 }
