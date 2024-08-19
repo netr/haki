@@ -7,3 +7,6 @@ data/*.csv
 data/*.txt
 
 .idea/
+
+coverage/
+bin/
