@@ -84,6 +84,8 @@ func newVocabularyEntity(ankiClient anki.AnkiClienter, cardCreator ai.AICardCrea
 }
 
 func (v *VocabularyEntity) Create(ctx context.Context, word string) error {
+	slog.Info("creating vocabulary card", slog.String("word", word))
+
 	if word == "" {
 		return fmt.Errorf("word is required")
 	}
@@ -92,13 +94,20 @@ func (v *VocabularyEntity) Create(ctx context.Context, word string) error {
 	if err := v.chooseDeck(ctx); err != nil {
 		return fmt.Errorf("choose deck: %w", err)
 	}
+	slog.Info("deck name chosen", slog.String("deck", v.deckName))
+
 	if err := v.createAnkiCards(ctx); err != nil {
 		return fmt.Errorf("create anki cards: %w", err)
 	}
+	slog.Info("anki card(s) created", slog.Any("cards", v.cards))
+
 	if err := v.createTTS(ctx); err != nil {
 		return fmt.Errorf("create tts: %w", err)
 	}
+	slog.Info("tts created", slog.String("output_path", v.ttsAudioPath))
 
+	// TODO: FIXME: make sure this model is created before using the app. Preferably something like "Haki::VocabularyWithAudio"
+	const modelName = "VocabularyWithAudio"
 	for _, c := range v.cards {
 		data := map[string]interface{}{
 			"Question":   c.Front,
@@ -106,7 +115,7 @@ func (v *VocabularyEntity) Create(ctx context.Context, word string) error {
 			"Audio":      fmt.Sprintf("[sound:%s.mp3]", v.word),
 		}
 
-		note := anki.NewNoteBuilder(v.deckName, "VocabularyWithAudio", data).
+		note := anki.NewNoteBuilder(v.deckName, modelName, data).
 			WithAudio(
 				v.ttsAudioPath,
 				fmt.Sprintf("%s.mp3", v.word),
@@ -119,8 +128,8 @@ func (v *VocabularyEntity) Create(ctx context.Context, word string) error {
 		}
 		slog.Info(
 			"note added",
-			slog.String("front", c.Front),
-			slog.String("back", c.Back),
+			slog.String("deck", v.deckName),
+			slog.String("model", modelName),
 			slog.String("id", fmt.Sprintf("%.f", id)),
 		)
 	}
@@ -153,7 +162,6 @@ func (v *VocabularyEntity) createAnkiCards(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("create anki cards: %w", err)
 	}
-	slog.Info("anki card created", slog.String("word", v.word), slog.Any("card", cards))
 
 	v.cards = cards
 	return nil
@@ -169,7 +177,6 @@ func (v *VocabularyEntity) chooseDeck(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("choose deck: %w", err)
 	}
-	slog.Info("deck chosen", slog.String("deck", deckName))
 
 	v.deckName = deckName
 	return nil
