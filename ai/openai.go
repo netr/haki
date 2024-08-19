@@ -14,25 +14,13 @@ var (
 	ErrInvalidOpenAIModel = errors.New("invalid openai model")
 )
 
-type OpenAIAPIProvider struct {
-	model *OpenAIModel
-}
-
-func (s *OpenAIAPIProvider) Action() CardCreator {
-	return s.model
-}
-
-func (s *OpenAIAPIProvider) ModelName() Modeler {
-	return s.model.modelType
-}
-
-type OpenAIModel struct {
-	apiKey    string
+// OpenAIAPI wraps the OpenAI API client
+type OpenAIClient struct {
 	client    *openai.Client
 	modelType OpenAIModelName
 }
 
-func NewOpenAIModel(apiKey string, modelType ...OpenAIModelName) *OpenAIModel {
+func NewOpenAIClient(apiKey string, modelType ...OpenAIModelName) *OpenAIClient {
 	mt := GPT4o20240806
 	if len(modelType) > 0 {
 		mt = modelType[0]
@@ -40,22 +28,47 @@ func NewOpenAIModel(apiKey string, modelType ...OpenAIModelName) *OpenAIModel {
 
 	client := openai.NewClient(apiKey)
 
-	return &OpenAIModel{
-		apiKey:    apiKey,
+	return &OpenAIClient{
 		modelType: mt,
 		client:    client,
 	}
 }
 
-func (m *OpenAIModel) ChooseDeck(deckNames []string, text string) (string, error) {
+func (api *OpenAIClient) CreateChatCompletion(ctx context.Context, request openai.ChatCompletionRequest) (openai.ChatCompletionResponse, error) {
+	return api.client.CreateChatCompletion(ctx, request)
+}
+
+type OpenAICardCreator struct {
+	client *OpenAIClient
+}
+
+func NewOpenAICardCreator(apiKey string, modelType ...OpenAIModelName) (*OpenAICardCreator, error) {
+	mt := GPT4o20240806
+	if len(modelType) > 0 {
+		mt = modelType[0]
+	}
+
+	if !isValidOpenAIModelName(string(mt)) {
+		return nil, ErrInvalidOpenAIModel
+	}
+
+	client := NewOpenAIClient(apiKey, mt)
+	return &OpenAICardCreator{client: client}, nil
+}
+
+func (s *OpenAICardCreator) ModelName() Modeler {
+	return s.client.modelType
+}
+
+func (s *OpenAICardCreator) ChooseDeck(deckNames []string, text string) (string, error) {
 	ctx := context.Background()
 
 	deckNameChoices := strings.Join(deckNames, ", ")
 
-	resp, err := m.client.CreateChatCompletion(
+	resp, err := s.client.CreateChatCompletion(
 		ctx,
 		openai.ChatCompletionRequest{
-			Model: m.modelType.String(),
+			Model: s.ModelName().String(),
 			Messages: []openai.ChatCompletionMessage{
 				{
 					Role: openai.ChatMessageRoleSystem,
@@ -112,13 +125,13 @@ func (m *OpenAIModel) ChooseDeck(deckNames []string, text string) (string, error
 	return result["Deck"], nil
 }
 
-func (m *OpenAIModel) CreateAnkiCards(deckName string, text string) ([]AnkiCard, error) {
+func (s *OpenAICardCreator) Create(deckName string, text string) ([]AnkiCard, error) {
 	ctx := context.Background()
 
-	resp, err := m.client.CreateChatCompletion(
+	resp, err := s.client.CreateChatCompletion(
 		ctx,
 		openai.ChatCompletionRequest{
-			Model:     m.modelType.String(),
+			Model:     s.ModelName().String(),
 			MaxTokens: 2048,
 			Messages: []openai.ChatCompletionMessage{
 				{
@@ -276,6 +289,9 @@ const (
 	GPT3Curie             OpenAIModelName = "curie"
 	GPT3Curie002          OpenAIModelName = "curie-002"
 	GPT3Babbage002        OpenAIModelName = "babbage-002"
+	TTSModel1             OpenAIModelName = "tts-1"
+	TTSModel1HD           OpenAIModelName = "tts-1-hd"
+	TTSModelCanary        OpenAIModelName = "canary-tts"
 )
 
 func (m OpenAIModelName) String() string {

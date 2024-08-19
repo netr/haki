@@ -7,8 +7,8 @@ import (
 	"github.com/netr/haki/ai"
 )
 
-func Test_NewAPIProvider_WorkingAsExpected(t *testing.T) {
-	o, err := ai.NewAPIProvider(ai.OpenAI, "key", ai.GPT3Curie)
+func Test_NewAICardCreator_WorkingAsExpected(t *testing.T) {
+	o, err := ai.NewAICardCreator(ai.OpenAI, "key", ai.GPT3Curie)
 	if err != nil || o == nil {
 		t.Fatal("openai model provider is nil")
 	}
@@ -20,17 +20,12 @@ func Test_NewAPIProvider_WorkingAsExpected(t *testing.T) {
 	if modelName.String() != ai.GPT3Curie.String() {
 		t.Fatalf("openai model name is not curie: %s", modelName.String())
 	}
-
-	actions := o.Action()
-	if actions == nil {
-		t.Fatal("openai actions is nil")
-	}
 }
 
-func Test_NewAIModelProvider_Anthropic_Unimplemented_Fail(t *testing.T) {
-	o, err := ai.NewAPIProvider(ai.Anthropic, "key", ai.GPT4Turbo20240409)
+func Test_NewAICardCreator_Anthropic_Unimplemented_Fail(t *testing.T) {
+	o, err := ai.NewAICardCreator(ai.Anthropic, "key", ai.GPT4Turbo20240409)
 	if err == nil || o != nil {
-		if errors.Is(err, ai.ErrInvalidAIModelProvider) {
+		if !errors.Is(err, ai.ErrUnimplemented) {
 			t.Fatal("anthropic model provider should return ErrUnimplemented")
 		}
 	}

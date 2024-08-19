@@ -13,17 +13,13 @@ type TTS interface {
 }
 
 type TTSService struct {
-	openAIApiKey string
-	client       *openai.Client
+	OpenAIClient
 }
 
 // NewTTSService creates a new TTS service with the given OpenAI API key.
 func NewTTSService(openAIApiKey string) TTS {
-	client := openai.NewClient(openAIApiKey)
-
 	return &TTSService{
-		openAIApiKey: openAIApiKey,
-		client:       client,
+		*NewOpenAIClient(openAIApiKey, TTSModel1),
 	}
 }
 
@@ -35,7 +31,7 @@ func (tts *TTSService) Generate(text string, voice openai.SpeechVoice, format op
 	raw, err := tts.client.CreateSpeech(
 		ctx,
 		openai.CreateSpeechRequest{
-			Model:          openai.TTSModel1,
+			Model:          openai.SpeechModel(tts.modelType),
 			Input:          fmt.Sprintf("\n[pause]\n%s", text),
 			Voice:          voice,
 			ResponseFormat: format,

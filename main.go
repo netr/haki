@@ -68,7 +68,7 @@ func runVocab(word string) error {
 	}
 
 	ankiClient := anki.NewClient(getEnv("ANKI_CONNECT_URL", "http://localhost:8765"))
-	aiService, err := ai.NewAPIProvider(ai.OpenAI, apiToken)
+	aiService, err := ai.NewAICardCreator(ai.OpenAI, apiToken)
 	if err != nil {
 		return fmt.Errorf("new openai api provider: %w", err)
 	}

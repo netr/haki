@@ -6,8 +6,8 @@ import (
 	"github.com/netr/haki/ai"
 )
 
-func Test_NewAIModelProvider_OpenAI_DefaultModel(t *testing.T) {
-	o, err := ai.NewAPIProvider(ai.OpenAI, "key")
+func Test_NewAICardCreator_OpenAI_DefaultModel(t *testing.T) {
+	o, err := ai.NewAICardCreator(ai.OpenAI, "key")
 	if err != nil || o == nil {
 		t.Fatal("openai model provider is nil")
 	}

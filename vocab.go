@@ -13,7 +13,7 @@ import (
 
 type VocabularyEntity struct {
 	ankiClient   *anki.Client
-	aiProvider   ai.APIProvider
+	cardCreator  ai.AICardCreator
 	ttsService   ai.TTS
 	word         string
 	deckName     string
@@ -21,12 +21,12 @@ type VocabularyEntity struct {
 	cards        []ai.AnkiCard
 }
 
-func newVocabularyEntity(ankiClient *anki.Client, aiProvider ai.APIProvider, ttsService ai.TTS, word string) *VocabularyEntity {
+func newVocabularyEntity(ankiClient *anki.Client, cardCreator ai.AICardCreator, ttsService ai.TTS, word string) *VocabularyEntity {
 	v := &VocabularyEntity{
-		ankiClient: ankiClient,
-		aiProvider: aiProvider,
-		ttsService: ttsService,
-		word:       word,
+		ankiClient:  ankiClient,
+		cardCreator: cardCreator,
+		ttsService:  ttsService,
+		word:        word,
 	}
 
 	return v
@@ -89,7 +89,7 @@ func (v *VocabularyEntity) createTTS() error {
 }
 
 func (v *VocabularyEntity) createAnkiCards() error {
-	cards, err := v.aiProvider.Action().CreateAnkiCards(
+	cards, err := v.cardCreator.Create(
 		v.deckName,
 		"Create a vocabulary card (with parts of speech ONLY on front) for the word: "+v.word+".",
 	)
@@ -103,12 +103,12 @@ func (v *VocabularyEntity) createAnkiCards() error {
 }
 
 func (v *VocabularyEntity) chooseDeck() error {
-	decks, err := v.getVocabDecks()
+	decks, err := v.getVocabDecks("Vocabulary")
 	if err != nil {
 		return fmt.Errorf("get vocabulary deck names: %w", err)
 	}
 
-	deckName, err := v.aiProvider.Action().ChooseDeck(decks, fmt.Sprintf("Which vocabulary deck should I use for the word: %s", v.word))
+	deckName, err := v.cardCreator.ChooseDeck(decks, fmt.Sprintf("Which vocabulary deck should I use for the word: %s", v.word))
 	if err != nil {
 		return fmt.Errorf("choose deck: %w", err)
 	}
@@ -126,15 +126,20 @@ func (v *VocabularyEntity) getDecks() ([]string, error) {
 	return anki.RemoveParentDecks(deckNames), nil
 }
 
-func (v *VocabularyEntity) getVocabDecks() ([]string, error) {
+func (v *VocabularyEntity) getVocabDecks(filter ...string) ([]string, error) {
 	deckNames, err := v.getDecks()
 	if err != nil {
 		return nil, fmt.Errorf("get deck names: %w", err)
 	}
+
+	if len(filter) == 0 {
+		return deckNames, nil
+	}
+
 	// only use deck names that have Vocabulary in them
 	var decks []string
 	for _, d := range deckNames {
-		if strings.Contains(d, "Vocabulary") {
+		if strings.Contains(d, filter[0]) {
 			decks = append(decks, d)
 		}
 	}
