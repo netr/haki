@@ -126,12 +126,12 @@ func runVocab(word string) error {
 	}
 	ttsService := ai.NewTTSService(apiToken)
 
-	vocabEntity := newVocabularyEntity(ankiClient, aiService, ttsService, word)
+	vocabEntity := newVocabularyEntity(ankiClient, aiService, ttsService)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
-	if err := vocabEntity.Create(ctx); err != nil {
+	if err := vocabEntity.Create(ctx, word); err != nil {
 		return fmt.Errorf("create vocab entity: %w", err)
 	}
 
