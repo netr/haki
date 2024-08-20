@@ -28,7 +28,6 @@ func actionTTS(apiKey string) func(cCtx *cli.Context) error {
 		if word == "" {
 			return fmt.Errorf("word is required --word <word>")
 		}
-		// optional output file
 		output := cCtx.String("out")
 		if output != "" {
 			if err := lib.ValidateOutputPath(output); err != nil {
@@ -44,23 +43,23 @@ func actionTTS(apiKey string) func(cCtx *cli.Context) error {
 	}
 }
 
-func runTTS(apiKey, word, output string) error {
+func runTTS(apiKey, text, outPath string) error {
 	ttsService := ai.NewTTSService(apiKey)
+
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-
-	bytes, err := ttsService.Generate(ctx, word, openai.VoiceAlloy, openai.SpeechResponseFormatMp3)
+	bytes, err := ttsService.Generate(ctx, text, openai.VoiceAlloy, openai.SpeechResponseFormatMp3)
 	if err != nil {
-		return fmt.Errorf("generate mp3: %w", err)
+		return fmt.Errorf("generate tts: %w", err)
 	}
 
-	if output == "" {
-		output = fmt.Sprintf("data/%s.mp3", word)
+	if outPath == "" {
+		outPath = fmt.Sprintf("data/%s.mp3", text)
 	}
-	if err = lib.SaveFile(output, bytes); err != nil {
-		return fmt.Errorf("save file: %w", err)
+	if err = lib.SaveFile(outPath, bytes); err != nil {
+		return fmt.Errorf("save tts file: %w", err)
 	}
 
-	slog.Info("tts created", slog.String("word", word), slog.String("output", output))
+	slog.Info("tts created", slog.String("word", text), slog.String("output", outPath))
 	return nil
 }

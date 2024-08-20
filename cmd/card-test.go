@@ -37,7 +37,7 @@ func actionCardTest(apiKey string) func(cCtx *cli.Context) error {
 }
 
 func runCardTest(apiKey, word string) error {
-	oa, err := ai.NewOpenAICardCreator(apiKey)
+	cardCreator, err := ai.NewOpenAICardCreator(apiKey)
 	if err != nil {
 		return fmt.Errorf("new openai card creator: %w", err)
 	}
@@ -45,14 +45,13 @@ func runCardTest(apiKey, word string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	ans, err := oa.Create(ctx, "test", word)
+	ans, err := cardCreator.Create(ctx, "test", word)
 	if err != nil {
 		return fmt.Errorf("create card: %w", err)
 	}
 
-	// pretty print the cards so that the user can easily see the definition and part of speech.
 	for _, c := range ans {
-		fmt.Printf("Front: %s\nBack: %s\n\n", c.Front, c.Back)
+		colors.BeautifyCard(c)
 	}
 	return nil
 }

@@ -41,17 +41,15 @@ func actionVocab(apiKey string) func(cCtx *cli.Context) error {
 
 func runVocab(apiKey, word string) error {
 	ankiClient := anki.NewClient(lib.GetEnv("ANKI_CONNECT_URL", "http://localhost:8765"))
-	aiService, err := ai.NewAICardCreator(ai.OpenAI, apiKey)
+	cardCreator, err := ai.NewAICardCreator(ai.OpenAI, apiKey)
 	if err != nil {
 		return fmt.Errorf("new openai api provider: %w", err)
 	}
 	ttsService := ai.NewTTSService(apiKey)
-
-	vocabEntity := newVocabularyEntity(ankiClient, aiService, ttsService)
+	vocabEntity := newVocabularyEntity(ankiClient, cardCreator, ttsService)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
-
 	if err := vocabEntity.Create(ctx, word); err != nil {
 		return fmt.Errorf("create vocab entity: %w", err)
 	}
@@ -95,7 +93,7 @@ func (v *VocabularyEntity) Create(ctx context.Context, word string) error {
 	if err := v.createAnkiCards(ctx); err != nil {
 		return fmt.Errorf("create anki cards: %w", err)
 	}
-	slog.Info("anki card(s) created", slog.Any("cards", v.cards))
+	slog.Info("anki card(s) created", slog.Int("count", len(v.cards)))
 
 	if err := v.createTTS(ctx); err != nil {
 		return fmt.Errorf("create tts: %w", err)
@@ -130,9 +128,8 @@ func (v *VocabularyEntity) Create(ctx context.Context, word string) error {
 		)
 	}
 
-	// pretty print the cards so that the user can easily see the definition and part of speech.
 	for _, c := range v.cards {
-		fmt.Printf("Front: %s\nBack: %s\n\n", c.Front, c.Back)
+		colors.BeautifyCard(c)
 	}
 	return nil
 }
