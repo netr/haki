@@ -15,6 +15,15 @@ linters:
     - gofmt
     - goimports
     - revive
+    - sloglint
+    - prealloc
+    - reassign
+    - tagalign
+    - goconst
+    - gocyclo
+    - gocritic
+    - errorlint
+    - err113
 
 linters-settings:
   goimports:
