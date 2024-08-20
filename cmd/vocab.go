@@ -14,24 +14,24 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-func NewVocabCommand(apiKey, hakiDir string) *cli.Command {
+func NewVocabCommand(apiKey, outputDir string) *cli.Command {
 	return &cli.Command{
 		Name:      "vocab",
 		Usage:     "Create a vocabulary Anki card using the specified word.",
 		ArgsUsage: "--word <word>",
 		Flags:     []cli.Flag{newWordFlag()},
-		Action:    actionVocab(apiKey, hakiDir),
+		Action:    actionVocab(apiKey, outputDir),
 	}
 }
 
-func actionVocab(apiKey, hakiDir string) func(cCtx *cli.Context) error {
+func actionVocab(apiKey, outputDir string) func(cCtx *cli.Context) error {
 	return func(cCtx *cli.Context) error {
 		word := cCtx.String("word")
 		if word == "" {
 			return fmt.Errorf("word is required --word <word>")
 		}
 
-		if err := runVocab(apiKey, word, hakiDir); err != nil {
+		if err := runVocab(apiKey, word, outputDir); err != nil {
 			slog.Error("run", slog.String("action", "vocab"), slog.String("error", err.Error()))
 			return err
 		}
@@ -39,18 +39,18 @@ func actionVocab(apiKey, hakiDir string) func(cCtx *cli.Context) error {
 	}
 }
 
-func runVocab(apiKey, word, outPath string) error {
+func runVocab(apiKey, word, outputDir string) error {
 	ankiClient := anki.NewClient(lib.GetEnv("ANKI_CONNECT_URL", "http://localhost:8765"))
 	cardCreator, err := ai.NewAICardCreator(ai.OpenAI, apiKey)
 	if err != nil {
 		return fmt.Errorf("new openai api provider: %w", err)
 	}
 	ttsService := ai.NewTTSService(apiKey)
-	vocabEntity := newVocabularyEntity(ankiClient, cardCreator, ttsService)
+	vocabEntity := newVocabularyEntity(ankiClient, cardCreator, ttsService, outputDir)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
-	if err := vocabEntity.Create(ctx, word, outPath); err != nil {
+	if err := vocabEntity.Create(ctx, word); err != nil {
 		return fmt.Errorf("create vocab entity: %w", err)
 	}
 
@@ -58,26 +58,28 @@ func runVocab(apiKey, word, outPath string) error {
 }
 
 type VocabularyEntity struct {
-	ankiClient   anki.AnkiClienter
-	cardCreator  ai.AICardCreator
-	ttsService   ai.TTS
-	word         string
-	deckName     string
-	ttsAudioPath string
-	cards        []ai.AnkiCard
+	ankiClient  anki.AnkiClienter
+	cardCreator ai.AICardCreator
+	ttsService  ai.TTS
+	word        string
+	deckName    string
+	ttsFilePath string
+	outputDir   string
+	cards       []ai.AnkiCard
 }
 
-func newVocabularyEntity(ankiClient anki.AnkiClienter, cardCreator ai.AICardCreator, ttsService ai.TTS) *VocabularyEntity {
+func newVocabularyEntity(ankiClient anki.AnkiClienter, cardCreator ai.AICardCreator, ttsService ai.TTS, outputDir string) *VocabularyEntity {
 	v := &VocabularyEntity{
 		ankiClient:  ankiClient,
 		cardCreator: cardCreator,
 		ttsService:  ttsService,
+		outputDir:   outputDir,
 	}
 
 	return v
 }
 
-func (v *VocabularyEntity) Create(ctx context.Context, word, outPath string) error {
+func (v *VocabularyEntity) Create(ctx context.Context, word string) error {
 	slog.Info("creating vocabulary card", slog.String("word", word))
 
 	if word == "" {
@@ -95,10 +97,10 @@ func (v *VocabularyEntity) Create(ctx context.Context, word, outPath string) err
 	}
 	slog.Info("anki card(s) created", slog.Int("count", len(v.cards)))
 
-	if err := v.createTTS(ctx, outPath); err != nil {
+	if err := v.createTTS(ctx); err != nil {
 		return fmt.Errorf("create tts: %w", err)
 	}
-	slog.Info("tts created", slog.String("output_path", v.ttsAudioPath))
+	slog.Info("tts created", slog.String("file_path", v.ttsFilePath))
 
 	// TODO: FIXME: make sure this model is created before using the app. Preferably something like "Haki::VocabularyWithAudio"
 	const modelName = "VocabularyWithAudio"
@@ -111,7 +113,7 @@ func (v *VocabularyEntity) Create(ctx context.Context, word, outPath string) err
 
 		note := anki.NewNoteBuilder(v.deckName, modelName, data).
 			WithAudio(
-				v.ttsAudioPath,
+				v.ttsFilePath,
 				fmt.Sprintf("%s.mp3", v.word),
 				"Front",
 			).Build()
@@ -135,21 +137,25 @@ func (v *VocabularyEntity) Create(ctx context.Context, word, outPath string) err
 	return nil
 }
 
-func (v *VocabularyEntity) createTTS(ctx context.Context, outPath string) error {
-	mp3, err := v.ttsService.GenerateMP3(ctx, v.word)
+func (v *VocabularyEntity) createTTS(ctx context.Context) error {
+	mp3Bytes, err := v.ttsService.GenerateMP3(ctx, v.word)
 	if err != nil {
 		return fmt.Errorf("generate mp3: %w", err)
 	}
-	err = lib.SaveFile(fmt.Sprintf("%s/data/%s.mp3", outPath, v.word), mp3)
-	if err != nil {
-		return fmt.Errorf("save file: %w", err)
-	}
-	path, err := filepath.Abs(fmt.Sprintf("%s/data/%s.mp3", outPath, v.word))
+	path, err := makeTTSFilePath(v.outputDir, v.word)
 	if err != nil {
 		return fmt.Errorf("get absolute path: %w", err)
 	}
-	v.ttsAudioPath = path
+	err = lib.SaveFile(path, mp3Bytes)
+	if err != nil {
+		return fmt.Errorf("save file: %w", err)
+	}
+	v.ttsFilePath = path
 	return nil
+}
+
+func makeTTSFilePath(outputDir, word string) (string, error) {
+	return filepath.Abs(fmt.Sprintf("%s/data/%s.mp3", outputDir, word))
 }
 
 func (v *VocabularyEntity) createAnkiCards(ctx context.Context) error {
