@@ -6,6 +6,8 @@ import (
 	"log"
 	"log/slog"
 	"os"
+	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
@@ -14,20 +16,27 @@ import (
 )
 
 func main() {
-	cfg, err := initConfig("haki.json")
-	if err != nil {
-		log.Fatalf("failed initializing config: %v", err)
-	}
-
-	if err := initLogger(cfg); err != nil {
-		log.Fatalf("failed initializing logger: %v", err)
-	}
-
+	cfg := mustSetup()
 	app := newApplication(cfg)
 	if err := app.run(os.Args); err != nil {
 		slog.Error("run app", slog.String("error", err.Error()))
 		os.Exit(1)
 	}
+}
+
+func mustSetup() *Config {
+	cfgFile, err := getConfigPath()
+	if err != nil {
+		log.Fatalf("failed getting config path: %v", err)
+	}
+	cfg, err := initConfig(cfgFile)
+	if err != nil {
+		log.Fatalf("failed initializing config: %v", err)
+	}
+	if err := initLogger(cfg); err != nil {
+		log.Fatalf("failed initializing logger: %v", err)
+	}
+	return cfg
 }
 
 type application struct {
@@ -105,4 +114,31 @@ func askUserFor(input string) (string, error) {
 		return "", fmt.Errorf("failed reading input: %w", err)
 	}
 	return output, nil
+}
+
+// getConfigPath returns the path to the configuration file 'haki.json' based on the OS.
+func getConfigPath() (string, error) {
+	var basePath string
+
+	switch runtime.GOOS {
+	case "windows":
+		basePath = os.Getenv("LOCALAPPDATA")
+	case "darwin":
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return "", err
+		}
+		basePath = filepath.Join(home, "Library", "Application Support")
+	case "linux":
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return "", err
+		}
+		basePath = filepath.Join(home, ".config")
+	default:
+		return "", fmt.Errorf("unsupported platform")
+	}
+
+	configPath := filepath.Join(basePath, "haki.json")
+	return configPath, nil
 }

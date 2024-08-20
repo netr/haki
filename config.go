@@ -108,7 +108,7 @@ func readConfig(path string) (*Config, error) {
 
 func createDefaultLoggerConfig() *ConfigLogger {
 	return &ConfigLogger{
-		Level:     "info",
+		Level:     "warn",
 		Format:    "text",
 		Output:    "stdout",
 		DebugMode: false,
