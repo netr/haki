@@ -120,7 +120,7 @@ func askUserFor(input string) (string, error) {
 	fmt.Print(input)
 	output, err := reader.ReadString('\n')
 	if err != nil {
-		return "", fmt.Errorf("failed reading input: %w", err)
+		return "", fmt.Errorf("reading input: %w", err)
 	}
 	return output, nil
 }
@@ -130,6 +130,8 @@ func getConfigPath(hakiDir string) (string, error) {
 	configPath := filepath.Join(hakiDir, "config.json")
 	return configPath, nil
 }
+
+var ErrUnsupportedPlatform = fmt.Errorf("unsupported platform")
 
 // getHakiDirPath returns the path to the haki directory based on the OS.
 // If the config.json file exists in the current directory, it will return the current directory. This allows for better development and testing.
@@ -153,7 +155,7 @@ func getHakiDirPath() (string, error) {
 			basePath = home // For Linux, use the home directory
 		}
 	default:
-		return "", fmt.Errorf("unsupported platform")
+		return "", ErrUnsupportedPlatform
 	}
 
 	hakiDir := filepath.Join(basePath, ".haki")
