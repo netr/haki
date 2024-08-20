@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"os"
 	"time"
 
 	"github.com/netr/haki/ai"
@@ -13,44 +12,40 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-func NewTTSCommand() *cli.Command {
+func NewTTSCommand(apiKey string) *cli.Command {
 	return &cli.Command{
 		Name:      "tts",
 		Usage:     "Create a text-to-speech audio file for the specified word.",
 		ArgsUsage: "--word <word> [--out <output file>]",
 		Flags:     []cli.Flag{newWordFlag(), newOutFlag()},
-		Action:    actionTTS,
+		Action:    actionTTS(apiKey),
 	}
 }
 
-func actionTTS(cCtx *cli.Context) error {
-	word := cCtx.String("word")
-	if word == "" {
-		return fmt.Errorf("word is required --word <word>")
-	}
-	// optional output file
-	output := cCtx.String("out")
-	if output != "" {
-		if err := lib.ValidateOutputPath(output); err != nil {
-			return fmt.Errorf("validate output path: %w", err)
+func actionTTS(apiKey string) func(cCtx *cli.Context) error {
+	return func(cCtx *cli.Context) error {
+		word := cCtx.String("word")
+		if word == "" {
+			return fmt.Errorf("word is required --word <word>")
 		}
-	}
+		// optional output file
+		output := cCtx.String("out")
+		if output != "" {
+			if err := lib.ValidateOutputPath(output); err != nil {
+				return fmt.Errorf("validate output path: %w", err)
+			}
+		}
 
-	if err := runTTS(word, output); err != nil {
-		slog.Error("run", slog.String("action", "tts"), slog.String("error", err.Error()))
-		return err
+		if err := runTTS(apiKey, word, output); err != nil {
+			slog.Error("run", slog.String("action", "tts"), slog.String("error", err.Error()))
+			return err
+		}
+		return nil
 	}
-	return nil
 }
 
-func runTTS(word string, output string) error {
-	apiToken := os.Getenv("OPENAI_API_KEY")
-	if apiToken == "" {
-		return fmt.Errorf("OPENAI_API_KEY is not set")
-	}
-
-	ttsService := ai.NewTTSService(apiToken)
-
+func runTTS(apiKey, word, output string) error {
+	ttsService := ai.NewTTSService(apiKey)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 

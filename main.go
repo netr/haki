@@ -23,50 +23,70 @@ func main() {
 		log.Fatalf("failed initializing logger: %v", err)
 	}
 
-	app := setupApp(cfg, registerCommands(cli.NewApp()))
-	if err := app.Run(os.Args); err != nil {
+	app := newApplication(cfg)
+	if err := app.run(os.Args); err != nil {
 		slog.Error("run app", slog.String("error", err.Error()))
 		os.Exit(1)
 	}
 }
 
-// registerCommands registers all the commands for the app.
-func registerCommands(app *cli.App) *cli.App {
-	app.Commands = []*cli.Command{
-		cmd.NewTTSCommand(),
-		cmd.NewVocabCommand(),
-		cmd.NewCardTestCommand(),
+type application struct {
+	config *Config
+	app    *cli.App
+}
+
+func newApplication(cfg *Config) *application {
+	app := &application{
+		config: cfg,
+		app:    &cli.App{},
 	}
+	app.setupAppMetadata()
+	app.registerCommands()
 	return app
 }
 
-// setupApp sets up the app metadata.
-func setupApp(cfg *Config, app *cli.App) *cli.App {
-	app.Name = "haki"
-	app.Version = "0.0.1"
-	app.Usage = "haki is a tool to help you create anki cards using AI and AnkiConnect"
-	app.Authors = []*cli.Author{
+// registerCommands registers all the commands for the app.
+func (a *application) registerCommands() *cli.App {
+	a.app.Commands = []*cli.Command{
+		cmd.NewTTSCommand(a.config.APIKeys.OpenAI),
+		cmd.NewVocabCommand(a.config.APIKeys.OpenAI),
+		cmd.NewCardTestCommand(a.config.APIKeys.OpenAI),
+	}
+	return a.app
+}
+
+// setupAppMetadata sets up the app metadata.
+func (a *application) setupAppMetadata() *cli.App {
+	a.app.Name = "haki"
+	a.app.Version = "0.0.1"
+	a.app.Usage = "haki is a tool to help you create anki cards using AI and AnkiConnect"
+	a.app.Authors = []*cli.Author{
 		{
 			Name:  "Corey Jackson (netr)",
 			Email: "programmatical@gmail.com",
 		},
 	}
-	app.Compiled = time.Now()
-	app.EnableBashCompletion = true
-	app.Before = beforeAppWithConfig(cfg)
-	return app
+	a.app.Compiled = time.Now()
+	a.app.EnableBashCompletion = true
+	a.app.Before = a.beforeAppWithConfig()
+	return a.app
 }
 
-func beforeAppWithConfig(cfg *Config) cli.BeforeFunc {
+// run runs the application.
+func (a *application) run(args []string) error {
+	return a.app.Run(args)
+}
+
+func (a *application) beforeAppWithConfig() cli.BeforeFunc {
 	return func(cCtx *cli.Context) error {
-		if cfg.APIKeys.OpenAI == "" {
+		if a.config.APIKeys.OpenAI == "" {
 			fmt.Printf("OpenAI API Key is not set.\nHaki needs the OpenAI API to generate cards and automatically place them in respective decks.\nIf you don't have an API key, you can learn how to get one here: https://platform.openai.com/docs/api-reference/introduction\n\n")
 			apiKey, err := askUserFor("Please enter your OpenAI API Key: ")
 			if err != nil {
 				log.Fatalf("failed asking user for OpenAI API Key: %v", err)
 			}
-			cfg.APIKeys.OpenAI = strings.TrimSpace(apiKey)
-			if err := cfg.Save(); err != nil {
+			a.config.APIKeys.OpenAI = strings.TrimSpace(apiKey)
+			if err := a.config.Save(); err != nil {
 				log.Fatalf("failed saving config: %v", err)
 			}
 		}

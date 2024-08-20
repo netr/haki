@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -15,41 +14,38 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-func NewVocabCommand() *cli.Command {
+func NewVocabCommand(apiKey string) *cli.Command {
 	return &cli.Command{
 		Name:      "vocab",
 		Usage:     "Create a vocabulary Anki card using the specified word.",
 		ArgsUsage: "--word <word>",
 		Flags:     []cli.Flag{newWordFlag()},
-		Action:    actionVocab,
+		Action:    actionVocab(apiKey),
 	}
 }
 
-func actionVocab(cCtx *cli.Context) error {
-	word := cCtx.String("word")
-	if word == "" {
-		return fmt.Errorf("word is required --word <word>")
-	}
+func actionVocab(apiKey string) func(cCtx *cli.Context) error {
+	return func(cCtx *cli.Context) error {
+		word := cCtx.String("word")
+		if word == "" {
+			return fmt.Errorf("word is required --word <word>")
+		}
 
-	if err := runVocab(word); err != nil {
-		slog.Error("run", slog.String("action", "vocab"), slog.String("error", err.Error()))
-		return err
+		if err := runVocab(apiKey, word); err != nil {
+			slog.Error("run", slog.String("action", "vocab"), slog.String("error", err.Error()))
+			return err
+		}
+		return nil
 	}
-	return nil
 }
 
-func runVocab(word string) error {
-	apiToken := os.Getenv("OPENAI_API_KEY")
-	if apiToken == "" {
-		return fmt.Errorf("OPENAI_API_KEY is not set")
-	}
-
+func runVocab(apiKey, word string) error {
 	ankiClient := anki.NewClient(lib.GetEnv("ANKI_CONNECT_URL", "http://localhost:8765"))
-	aiService, err := ai.NewAICardCreator(ai.OpenAI, apiToken)
+	aiService, err := ai.NewAICardCreator(ai.OpenAI, apiKey)
 	if err != nil {
 		return fmt.Errorf("new openai api provider: %w", err)
 	}
-	ttsService := ai.NewTTSService(apiToken)
+	ttsService := ai.NewTTSService(apiKey)
 
 	vocabEntity := newVocabularyEntity(ankiClient, aiService, ttsService)
 
@@ -132,6 +128,11 @@ func (v *VocabularyEntity) Create(ctx context.Context, word string) error {
 			slog.String("model", modelName),
 			slog.String("id", fmt.Sprintf("%.f", id)),
 		)
+	}
+
+	// pretty print the cards so that the user can easily see the definition and part of speech.
+	for _, c := range v.cards {
+		fmt.Printf("Front: %s\nBack: %s\n\n", c.Front, c.Back)
 	}
 	return nil
 }
