@@ -12,15 +12,21 @@ import (
 func SaveFile(fileName string, data []byte) error {
 	f, err := os.Create(fileName)
 	if err != nil {
-		return fmt.Errorf("create file: %w", err)
+		return err
 	}
 	defer f.Close()
 
 	_, err = f.Write(data)
 	if err != nil {
-		return fmt.Errorf("write file: %w", err)
+		return err
 	}
 	return nil
+}
+
+// FileExists checks if a file exists at the given path.
+func FileExists(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil
 }
 
 // validateOutputPath validates the output path to ensure it is a valid file path and writable.

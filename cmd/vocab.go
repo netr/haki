@@ -144,7 +144,7 @@ func (v *VocabularyEntity) createTTS(ctx context.Context) error {
 	}
 	path, err := makeTTSFilePath(v.outputDir, v.word)
 	if err != nil {
-		return fmt.Errorf("get absolute path: %w", err)
+		return fmt.Errorf("make file path: %w", err)
 	}
 	err = lib.SaveFile(path, mp3Bytes)
 	if err != nil {

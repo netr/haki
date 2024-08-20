@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/netr/haki/cmd"
+	"github.com/netr/haki/lib"
 	"github.com/urfave/cli/v2"
 )
 
@@ -131,9 +132,13 @@ func getConfigPath(hakiDir string) (string, error) {
 }
 
 // getHakiDirPath returns the path to the haki directory based on the OS.
+// If the config.json file exists in the current directory, it will return the current directory. This allows for better development and testing.
 func getHakiDirPath() (string, error) {
-	var basePath string
+	if lib.FileExists("./config.json") {
+		return ".", nil
+	}
 
+	var basePath string
 	switch runtime.GOOS {
 	case "windows":
 		basePath = os.Getenv("LOCALAPPDATA")
