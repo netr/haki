@@ -128,8 +128,9 @@ func (v *VocabularyEntity) Create(ctx context.Context, word string) error {
 		)
 	}
 
+	fmt.Println("")
 	for _, c := range v.cards {
-		colors.BeautifyCard(c)
+		fmt.Print(colors.BeautifyCard(c))
 	}
 	return nil
 }

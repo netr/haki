@@ -51,7 +51,7 @@ func runCardTest(apiKey, word string) error {
 	}
 
 	for _, c := range ans {
-		colors.BeautifyCard(c)
+		fmt.Print(colors.BeautifyCard(c))
 	}
 	return nil
 }
