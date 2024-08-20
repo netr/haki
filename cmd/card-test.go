@@ -26,7 +26,7 @@ func actionCardTest(apiKey string) func(cCtx *cli.Context) error {
 	return func(cCtx *cli.Context) error {
 		word := cCtx.String("word")
 		if word == "" {
-			return fmt.Errorf("word is required --word <word>")
+			return ErrWordFlagRequired
 		}
 
 		if err := runCardTest(apiKey, word); err != nil {

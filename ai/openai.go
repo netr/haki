@@ -14,6 +14,14 @@ var (
 	ErrInvalidOpenAIModel = errors.New("invalid openai model")
 )
 
+type ErrMissingKey struct {
+	Key string
+}
+
+func (e ErrMissingKey) Error() string {
+	return "missing key: " + e.Key
+}
+
 // OpenAIClient wraps the OpenAI API client
 type OpenAIClient struct {
 	client    *openai.Client
@@ -123,7 +131,7 @@ func (s *OpenAICardCreator) ChooseDeck(ctx context.Context, deckNames []string, 
 	}
 	for _, key := range []string{"Deck"} {
 		if _, ok := result[key]; !ok {
-			return "", errors.New("missing key: " + key)
+			return "", ErrMissingKey{Key: key}
 		}
 	}
 
@@ -231,6 +239,7 @@ type createAnkiCardsData struct {
 }
 
 // isValidOpenAIModelName checks if the given model name is valid. Needs to be updated when new models are released.
+// nolint:gocyclo
 func isValidOpenAIModelName(name string) bool {
 	switch name {
 	case string(GPT432K0613):

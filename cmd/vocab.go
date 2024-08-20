@@ -29,7 +29,7 @@ func actionVocab(apiKey, outputDir string) func(cCtx *cli.Context) error {
 	return func(cCtx *cli.Context) error {
 		word := cCtx.String("word")
 		if word == "" {
-			return fmt.Errorf("word is required --word <word>")
+			return ErrWordFlagRequired
 		}
 
 		if err := runVocab(apiKey, word, outputDir); err != nil {
@@ -58,6 +58,10 @@ func runVocab(apiKey, word, outputDir string) error {
 	return nil
 }
 
+var (
+	ErrWordRequired = fmt.Errorf("word is required")
+)
+
 type VocabularyEntity struct {
 	ankiClient  anki.AnkiClienter
 	cardCreator ai.AICardCreator
@@ -84,7 +88,7 @@ func (v *VocabularyEntity) Create(ctx context.Context, word string) error {
 	slog.Info("creating vocabulary card", slog.String("word", word))
 
 	if word == "" {
-		return fmt.Errorf("word is required")
+		return ErrWordRequired
 	}
 	v.word = word
 

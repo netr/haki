@@ -4,7 +4,6 @@ package anki
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -140,7 +139,7 @@ func (c *Client) Send(action string, params interface{}) (ClientResponse, error)
 		return ClientResponse{}, fmt.Errorf("unmarshaling response: %w", err)
 	}
 	if result.Error != nil {
-		return ClientResponse{}, errors.New(*result.Error)
+		return ClientResponse{}, &ClientRequestError{Err: *result.Error}
 	}
 
 	return ClientResponse{
@@ -168,4 +167,12 @@ func NewRequestPayload(action string, params interface{}) ([]byte, error) {
 		payload["params"] = params
 	}
 	return json.Marshal(payload)
+}
+
+type ClientRequestError struct {
+	Err string
+}
+
+func (e *ClientRequestError) Error() string {
+	return e.Err
 }

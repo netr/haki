@@ -1,7 +1,6 @@
 package lib
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -29,16 +28,24 @@ func FileExists(path string) bool {
 	return err == nil
 }
 
+type OutputPathError struct {
+	Err string
+}
+
+func (e *OutputPathError) Error() string {
+	return e.Err
+}
+
 // ValidateOutputPath validates the output path to ensure it is a valid file path and writable.
 func ValidateOutputPath(output string) error {
 	if output == "" {
-		return errors.New("output path is empty")
+		return &OutputPathError{"output path is empty"}
 	}
 
 	// Check if the path is a directory
 	info, err := os.Stat(output)
 	if err == nil && info.IsDir() {
-		return errors.New("output path is a directory")
+		return &OutputPathError{"output path is a directory"}
 	}
 
 	// Check if the directory exists and is writable
