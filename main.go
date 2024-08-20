@@ -25,7 +25,11 @@ func main() {
 }
 
 func mustSetup() *Config {
-	cfgFile, err := getConfigPath()
+	hakiDir, err := getHakiDirPath()
+	if err != nil {
+		log.Fatalf("failed getting haki directory path: %v", err)
+	}
+	cfgFile, err := getConfigPath(hakiDir)
 	if err != nil {
 		log.Fatalf("failed getting config path: %v", err)
 	}
@@ -36,18 +40,22 @@ func mustSetup() *Config {
 	if err := initLogger(cfg); err != nil {
 		log.Fatalf("failed initializing logger: %v", err)
 	}
+
+	cfg.hakiDir = hakiDir
 	return cfg
 }
 
 type application struct {
-	config *Config
-	app    *cli.App
+	config  *Config
+	app     *cli.App
+	hakiDir string
 }
 
 func newApplication(cfg *Config) *application {
 	app := &application{
-		config: cfg,
-		app:    &cli.App{},
+		config:  cfg,
+		app:     &cli.App{},
+		hakiDir: filepath.Dir(cfg.fileName),
 	}
 	app.setupAppMetadata()
 	app.registerCommands()
@@ -57,8 +65,8 @@ func newApplication(cfg *Config) *application {
 // registerCommands registers all the commands for the app.
 func (a *application) registerCommands() *cli.App {
 	a.app.Commands = []*cli.Command{
-		cmd.NewTTSCommand(a.config.APIKeys.OpenAI),
-		cmd.NewVocabCommand(a.config.APIKeys.OpenAI),
+		cmd.NewTTSCommand(a.config.APIKeys.OpenAI, a.config.hakiDir),
+		cmd.NewVocabCommand(a.config.APIKeys.OpenAI, a.config.hakiDir),
 		cmd.NewCardTestCommand(a.config.APIKeys.OpenAI),
 	}
 	return a.app
@@ -117,28 +125,39 @@ func askUserFor(input string) (string, error) {
 }
 
 // getConfigPath returns the path to the configuration file 'haki.json' based on the OS.
-func getConfigPath() (string, error) {
+func getConfigPath(hakiDir string) (string, error) {
+	configPath := filepath.Join(hakiDir, "config.json")
+	return configPath, nil
+}
+
+// getHakiDirPath returns the path to the haki directory based on the OS.
+func getHakiDirPath() (string, error) {
 	var basePath string
 
 	switch runtime.GOOS {
 	case "windows":
 		basePath = os.Getenv("LOCALAPPDATA")
-	case "darwin":
+	case "darwin", "linux":
 		home, err := os.UserHomeDir()
 		if err != nil {
 			return "", err
 		}
-		basePath = filepath.Join(home, "Library", "Application Support")
-	case "linux":
-		home, err := os.UserHomeDir()
-		if err != nil {
-			return "", err
+		if runtime.GOOS == "darwin" {
+			basePath = filepath.Join(home, "Library", "Application Support")
+		} else {
+			basePath = home // For Linux, use the home directory
 		}
-		basePath = filepath.Join(home, ".config")
 	default:
 		return "", fmt.Errorf("unsupported platform")
 	}
 
-	configPath := filepath.Join(basePath, "haki.json")
-	return configPath, nil
+	hakiDir := filepath.Join(basePath, ".haki")
+	if err := os.MkdirAll(hakiDir, 0755); err != nil {
+		return "", err
+	}
+	dataDir := filepath.Join(hakiDir, "data")
+	if err := os.MkdirAll(dataDir, 0755); err != nil {
+		return "", err
+	}
+	return hakiDir, nil
 }

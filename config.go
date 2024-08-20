@@ -15,6 +15,7 @@ type Config struct {
 	Logger   *ConfigLogger  `json:"logger"`
 	APIKeys  *ConfigApiKeys `json:"api_keys"`
 	fileName string
+	hakiDir  string
 }
 
 func (c *Config) Save() error {

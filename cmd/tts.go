@@ -12,17 +12,17 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-func NewTTSCommand(apiKey string) *cli.Command {
+func NewTTSCommand(apiKey, hakiDir string) *cli.Command {
 	return &cli.Command{
 		Name:      "tts",
 		Usage:     "Create a text-to-speech audio file for the specified word.",
 		ArgsUsage: "--word <word> [--out <output file>]",
 		Flags:     []cli.Flag{newWordFlag(), newOutFlag()},
-		Action:    actionTTS(apiKey),
+		Action:    actionTTS(apiKey, hakiDir),
 	}
 }
 
-func actionTTS(apiKey string) func(cCtx *cli.Context) error {
+func actionTTS(apiKey, hakiDir string) func(cCtx *cli.Context) error {
 	return func(cCtx *cli.Context) error {
 		word := cCtx.String("word")
 		if word == "" {
@@ -33,6 +33,8 @@ func actionTTS(apiKey string) func(cCtx *cli.Context) error {
 			if err := lib.ValidateOutputPath(output); err != nil {
 				return fmt.Errorf("validate output path: %w", err)
 			}
+		} else {
+			output = fmt.Sprintf("%s/data/%s.mp3", hakiDir, word)
 		}
 
 		if err := runTTS(apiKey, word, output); err != nil {
@@ -53,9 +55,6 @@ func runTTS(apiKey, text, outPath string) error {
 		return fmt.Errorf("generate tts: %w", err)
 	}
 
-	if outPath == "" {
-		outPath = fmt.Sprintf("data/%s.mp3", text)
-	}
 	if err = lib.SaveFile(outPath, bytes); err != nil {
 		return fmt.Errorf("save tts file: %w", err)
 	}
