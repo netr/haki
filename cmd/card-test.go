@@ -6,8 +6,9 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/netr/haki/ai"
 	"github.com/urfave/cli/v2"
+
+	"github.com/netr/haki/ai"
 )
 
 func NewCardTestCommand(apiKey string) *cli.Command {

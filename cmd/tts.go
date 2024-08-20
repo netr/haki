@@ -6,10 +6,11 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/netr/haki/ai"
-	"github.com/netr/haki/lib"
 	"github.com/sashabaranov/go-openai"
 	"github.com/urfave/cli/v2"
+
+	"github.com/netr/haki/ai"
+	"github.com/netr/haki/lib"
 )
 
 func NewTTSCommand(apiKey, hakiDir string) *cli.Command {

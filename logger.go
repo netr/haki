@@ -84,6 +84,7 @@ func initLogger(cfg *Config) error {
 }
 
 var (
+	// ErrInvalidLogFilename is returned when the log filename is invalid.
 	ErrInvalidLogFilename = errors.New("invalid log filename")
 )
 

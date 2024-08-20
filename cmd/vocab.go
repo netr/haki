@@ -8,10 +8,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/urfave/cli/v2"
+
 	"github.com/netr/haki/ai"
 	"github.com/netr/haki/anki"
 	"github.com/netr/haki/lib"
-	"github.com/urfave/cli/v2"
 )
 
 func NewVocabCommand(apiKey, outputDir string) *cli.Command {

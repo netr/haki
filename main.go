@@ -11,9 +11,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/urfave/cli/v2"
+
 	"github.com/netr/haki/cmd"
 	"github.com/netr/haki/lib"
-	"github.com/urfave/cli/v2"
 )
 
 func main() {
@@ -96,7 +97,7 @@ func (a *application) run(args []string) error {
 }
 
 func (a *application) beforeAppWithConfig() cli.BeforeFunc {
-	return func(cCtx *cli.Context) error {
+	return func(_ *cli.Context) error {
 		if a.config.APIKeys.OpenAI == "" {
 			fmt.Printf("OpenAI API Key is not set.\nHaki needs the OpenAI API to generate cards and automatically place them in respective decks.\nIf you don't have an API key, you can learn how to get one here: https://platform.openai.com/docs/api-reference/introduction\n\n")
 			apiKey, err := askUserFor("Please enter your OpenAI API Key: ")
@@ -131,6 +132,7 @@ func getConfigPath(hakiDir string) (string, error) {
 	return configPath, nil
 }
 
+// ErrUnsupportedPlatform is returned when the platform is not supported.
 var ErrUnsupportedPlatform = fmt.Errorf("unsupported platform")
 
 // getHakiDirPath returns the path to the haki directory based on the OS.

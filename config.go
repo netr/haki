@@ -77,13 +77,13 @@ func createDefaultConfig(path string) (*Config, error) {
 }
 
 func saveConfig(path string, cfg *Config) error {
-	file, err := os.Create(path)
+	fd, err := os.Create(path)
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer func() { _ = fd.Close() }()
 
-	enc := json.NewEncoder(file)
+	enc := json.NewEncoder(fd)
 	enc.SetIndent("", "  ")
 	if err := enc.Encode(cfg); err != nil {
 		return err
@@ -92,14 +92,14 @@ func saveConfig(path string, cfg *Config) error {
 }
 
 func readConfig(path string) (*Config, error) {
-	file, err := os.Open(path)
+	fd, err := os.Open(path)
 	if err != nil {
 		return nil, ErrConfigNotFound
 	}
-	defer file.Close()
+	defer func() { _ = fd.Close() }()
 
 	var config Config
-	if err := json.NewDecoder(file).Decode(&config); err != nil {
+	if err := json.NewDecoder(fd).Decode(&config); err != nil {
 		return nil, err
 	}
 
