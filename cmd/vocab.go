@@ -112,7 +112,7 @@ func (v *VocabularyEntity) Create(ctx context.Context, word string) error {
 	for _, c := range v.cards {
 		data := map[string]interface{}{
 			"Question":   c.Front,
-			"Definition": c.Back,
+			"Definition": formatBack(c.Back),
 			"Audio":      fmt.Sprintf("[sound:%s.mp3]", v.word),
 		}
 
@@ -140,6 +140,14 @@ func (v *VocabularyEntity) Create(ctx context.Context, word string) error {
 		fmt.Print(colors.BeautifyCard(c))
 	}
 	return nil
+}
+
+func formatBack(data string) string {
+	// replace newlines with <br> for Anki
+	data = strings.ReplaceAll(data, "\n", "<br>")
+	// replace Example: with <br><b>Example:</b>
+	data = strings.ReplaceAll(data, "Example:", "<br><b>Example:</b>")
+	return data
 }
 
 func (v *VocabularyEntity) createTTS(ctx context.Context) error {
