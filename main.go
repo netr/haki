@@ -156,11 +156,12 @@ func getHakiDirPath() (string, error) {
 		} else {
 			basePath = home // For Linux, use the home directory
 		}
+		log.Println(home, basePath)
 	default:
 		return "", ErrUnsupportedPlatform
 	}
 
-	hakiDir := filepath.Join(basePath, ".haki")
+	hakiDir := filepath.Join(basePath, ".config", "haki")
 	if err := os.MkdirAll(hakiDir, 0755); err != nil {
 		return "", err
 	}
