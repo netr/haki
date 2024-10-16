@@ -12,6 +12,16 @@ func newWordFlag() *cli.StringFlag {
 	}
 }
 
+func newTopicFlag() *cli.StringFlag {
+	return &cli.StringFlag{
+		Name:     "topic",
+		Aliases:  []string{"t"},
+		Value:    "",
+		Required: true,
+		Usage:    "topic to create a card for",
+	}
+}
+
 func newOutFlag() *cli.StringFlag {
 	return &cli.StringFlag{
 		Name:    "out",
