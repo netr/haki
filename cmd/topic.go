@@ -14,31 +14,91 @@ import (
 	"github.com/netr/haki/lib"
 )
 
+func newTopicFlag() *cli.StringFlag {
+	return &cli.StringFlag{
+		Name:     "topic",
+		Aliases:  []string{"t"},
+		Value:    "",
+		Required: true,
+		Usage:    "topic to create a card for",
+	}
+}
+
 func NewTopicCommand(apiKey, outputDir string) *cli.Command {
 	return &cli.Command{
 		Name:      "topic",
 		Usage:     "Create a topical Anki card using the specified topic.",
 		ArgsUsage: "--topic <topic>",
 		Flags:     []cli.Flag{newTopicFlag()},
-		Action:    actionTopic(apiKey),
+		Action:    actionFn(NewActionTopic(apiKey, "topic", []string{"topic"})),
+		// Action: actionFn("topic", runTopic(apiKey, topic))
 	}
 }
 
-func actionTopic(apiKey string) func(cCtx *cli.Context) error {
+type ActionCallbackFunc func() error
+
+type Actioner interface {
+	Run(...interface{}) error
+	Flags() []string
+	Name() string
+}
+
+func actionFn(a Actioner) func(cCtx *cli.Context) error {
 	return func(cCtx *cli.Context) error {
-		topic := cCtx.String("topic")
-		if topic == "" {
-			return ErrTopicRequired
+		var args []interface{}
+		for _, f := range a.Flags() {
+			fstr := cCtx.String(f)
+			if fstr == "" {
+				return &ErrFlagValueMissing{Flag: f}
+			}
+			args = append(args, cCtx.String(f))
 		}
 
-		if err := runTopic(apiKey, topic); err != nil {
-			slog.Error("run", slog.String("action", "topic"), slog.String("error", err.Error()))
+		if err := a.Run(args...); err != nil {
+			slog.Error("run", slog.String("action", a.Name()), slog.String("error", err.Error()))
 			return err
 		}
 		return nil
 	}
 }
 
+type ActionTopic struct {
+	flags  []string
+	apiKey string
+	name   string
+}
+
+func NewActionTopic(apiKey, name string, flags []string) *ActionTopic {
+	return &ActionTopic{
+		flags:  flags,
+		apiKey: apiKey,
+		name:   name,
+	}
+}
+
+func (a ActionTopic) Run(args ...interface{}) error {
+	if len(args) < 1 {
+		return fmt.Errorf("action run: %w", ErrTopicRequired)
+	}
+	topic := args[0].(string)
+
+	if err := runTopic(a.apiKey, topic); err != nil {
+		return fmt.Errorf("action run: %w", err)
+	}
+	return nil
+}
+
+func (a ActionTopic) Flags() []string {
+	return a.flags
+}
+
+func (a ActionTopic) Name() string {
+	return a.name
+}
+
+// runTopic creates an anki client, card creator and builds the anki card.
+// doesn't need to be part of the action topic struct because the problem terminates after finishing.
+// if we make this a long running program, we should put this in the struct and hold references to the client/creator.
 func runTopic(apiKey, word string) error {
 	ankiClient := anki.NewClient(lib.GetEnv("ANKI_CONNECT_URL", "http://localhost:8765"))
 	cardCreator, err := ai.NewAICardCreator(ai.OpenAI, apiKey)
@@ -59,6 +119,14 @@ func runTopic(apiKey, word string) error {
 var (
 	ErrTopicRequired = fmt.Errorf("topic is required")
 )
+
+type ErrFlagValueMissing struct {
+	Flag string
+}
+
+func (e *ErrFlagValueMissing) Error() string {
+	return fmt.Sprintf("flag '%s' is missing data", e.Flag)
+}
 
 type TopicEntity struct {
 	ankiClient  anki.AnkiClienter
@@ -128,7 +196,7 @@ func (t *TopicEntity) createAnkiCards(ctx context.Context) error {
 	cards, err := t.cardCreator.Create(
 		ctx,
 		t.deckName,
-		"Create a concise and informative card for the topic: "+t.topic+".",
+		t.topic,
 	)
 	if err != nil {
 		return fmt.Errorf("create anki cards: %w", err)

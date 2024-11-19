@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -142,11 +143,17 @@ func (v *VocabularyEntity) Create(ctx context.Context, word string) error {
 	return nil
 }
 
+func replaceBold(text string) string {
+	re := regexp.MustCompile(`\*\*(.*?)\*\*`)
+	return re.ReplaceAllString(text, `<b>$1</b>`)
+}
+
 func formatBack(data string) string {
 	// replace newlines with <br> for Anki
-	data = strings.ReplaceAll(data, "\n", "<br>")
-	// replace Example: with <br><b>Example:</b>
-	data = strings.ReplaceAll(data, "Example:", "<br><b>Example:</b>")
+	// data = strings.ReplaceAll(data, "\n", "<br>")
+	// data = strings.ReplaceAll(data, "Example:", "<br><b>Example:</b>")
+	// data = strings.ReplaceAll(data, "Examples:", "<br><b>Examples:</b><br>")
+	data = replaceBold(data)
 	return data
 }
 
