@@ -14,16 +14,6 @@ import (
 	"github.com/netr/haki/lib"
 )
 
-func newTopicFlag() *cli.StringFlag {
-	return &cli.StringFlag{
-		Name:     "topic",
-		Aliases:  []string{"t"},
-		Value:    "",
-		Required: true,
-		Usage:    "topic to create a card for",
-	}
-}
-
 func NewTopicCommand(apiKey, outputDir string) *cli.Command {
 	return &cli.Command{
 		Name:      "topic",
@@ -35,30 +25,13 @@ func NewTopicCommand(apiKey, outputDir string) *cli.Command {
 	}
 }
 
-type ActionCallbackFunc func() error
-
-type Actioner interface {
-	Run(...interface{}) error
-	Flags() []string
-	Name() string
-}
-
-func actionFn(a Actioner) func(cCtx *cli.Context) error {
-	return func(cCtx *cli.Context) error {
-		var args []interface{}
-		for _, f := range a.Flags() {
-			fstr := cCtx.String(f)
-			if fstr == "" {
-				return &ErrFlagValueMissing{Flag: f}
-			}
-			args = append(args, cCtx.String(f))
-		}
-
-		if err := a.Run(args...); err != nil {
-			slog.Error("run", slog.String("action", a.Name()), slog.String("error", err.Error()))
-			return err
-		}
-		return nil
+func newTopicFlag() *cli.StringFlag {
+	return &cli.StringFlag{
+		Name:     "topic",
+		Aliases:  []string{"t"},
+		Value:    "",
+		Required: true,
+		Usage:    "topic to create a card for",
 	}
 }
 
@@ -76,6 +49,14 @@ func NewActionTopic(apiKey, name string, flags []string) *ActionTopic {
 	}
 }
 
+func (a ActionTopic) Flags() []string {
+	return a.flags
+}
+
+func (a ActionTopic) Name() string {
+	return a.name
+}
+
 func (a ActionTopic) Run(args ...interface{}) error {
 	if len(args) < 1 {
 		return fmt.Errorf("action run: %w", ErrTopicRequired)
@@ -86,14 +67,6 @@ func (a ActionTopic) Run(args ...interface{}) error {
 		return fmt.Errorf("action run: %w", err)
 	}
 	return nil
-}
-
-func (a ActionTopic) Flags() []string {
-	return a.flags
-}
-
-func (a ActionTopic) Name() string {
-	return a.name
 }
 
 // runTopic creates an anki client, card creator and builds the anki card.
@@ -109,7 +82,7 @@ func runTopic(apiKey, word string) error {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
-	if err := topicEntity.Create(ctx, word); err != nil {
+	if err := topicEntity.Create(ctx, word, generateAnkiCardPrompt()); err != nil {
 		return fmt.Errorf("create vocab entity: %w", err)
 	}
 
@@ -145,7 +118,7 @@ func newTopicEntity(ankiClient anki.AnkiClienter, cardCreator ai.AICardCreator) 
 	return t
 }
 
-func (t *TopicEntity) Create(ctx context.Context, topic string) error {
+func (t *TopicEntity) Create(ctx context.Context, topic string, prompt string) error {
 	slog.Info("creating topic card", slog.String("topic", topic))
 
 	if topic == "" {
@@ -158,7 +131,7 @@ func (t *TopicEntity) Create(ctx context.Context, topic string) error {
 	}
 	slog.Info("deck name chosen", slog.String("deck", t.deckName))
 
-	if err := t.createAnkiCards(ctx); err != nil {
+	if err := t.createAnkiCards(ctx, prompt); err != nil {
 		return fmt.Errorf("create anki cards: %w", err)
 	}
 	slog.Info("anki card(s) created", slog.Int("count", len(t.cards)))
@@ -192,11 +165,12 @@ func (t *TopicEntity) Create(ctx context.Context, topic string) error {
 	return nil
 }
 
-func (t *TopicEntity) createAnkiCards(ctx context.Context) error {
+func (t *TopicEntity) createAnkiCards(ctx context.Context, prompt string) error {
 	cards, err := t.cardCreator.Create(
 		ctx,
 		t.deckName,
 		t.topic,
+		prompt,
 	)
 	if err != nil {
 		return fmt.Errorf("create anki cards: %w", err)

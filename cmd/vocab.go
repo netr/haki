@@ -183,6 +183,7 @@ func (v *VocabularyEntity) createAnkiCards(ctx context.Context) error {
 		ctx,
 		v.deckName,
 		"Create a vocabulary card (with parts of speech ONLY on front) for the word: "+v.word+".",
+		generateAnkiCardPrompt(),
 	)
 	if err != nil {
 		return fmt.Errorf("create anki cards: %w", err)
