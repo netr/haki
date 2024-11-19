@@ -149,10 +149,6 @@ func replaceBold(text string) string {
 }
 
 func formatBack(data string) string {
-	// replace newlines with <br> for Anki
-	// data = strings.ReplaceAll(data, "\n", "<br>")
-	// data = strings.ReplaceAll(data, "Example:", "<br><b>Example:</b>")
-	// data = strings.ReplaceAll(data, "Examples:", "<br><b>Examples:</b><br>")
 	data = replaceBold(data)
 	return data
 }
