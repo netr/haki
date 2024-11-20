@@ -149,6 +149,10 @@ func replaceBold(text string) string {
 }
 
 func formatBack(data string) string {
+	if !strings.Contains(strings.ToLower(data), "<") {
+		data = strings.ReplaceAll(data, "\n", "<br>\n")
+	}
+	data = strings.ReplaceAll(data, "\\<", "<")
 	data = replaceBold(data)
 	return data
 }
@@ -209,7 +213,7 @@ func (v *VocabularyEntity) getDecks() ([]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("get deck names: %w", err)
 	}
-	return anki.RemoveParentDecks(deckNames), nil
+	return anki.FilterDecksByHierarchy(deckNames), nil
 }
 
 func (v *VocabularyEntity) getVocabDecks(filter ...string) ([]string, error) {

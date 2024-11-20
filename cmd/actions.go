@@ -89,12 +89,13 @@ func generateAnkiCardPrompt() string {
   </Documents>
 </Examples>
 <Task>
-Your task is to create insightful, meaningful and concise Anki cards with just a front and back. The back *MUST* be in HTML format. The goal is to create the most useful back cards as possible, to help the student learn deeply as they study. Please avoid wasteful and anemic questions.
+Your task is to create insightful, meaningful and concise Anki cards with just a front and back. The goal is to create the most useful back cards as possible, to help the student learn deeply as they study. Please avoid wasteful and anemic questions.
 - Prefer to use mathematical equations to explain the cards. Always wrap them in MathJax. Use """html <anki-mathjax>#MATH#</anki-mathjax>""". 
 - When using code examples, *always* use Python.
 - Wrap all code and psuedocode in <code></code>.
 - Use a variety of methods when writing back card content, if it's helpful. I.e.: lists, concepts, examples, math equations, comparisons, usage, potential bias, etc.
 - Always keep your answers concise without losing context and insight.
+- The back card *MUST only* be in HTML format!
 </Task>`
 
 	return prompt

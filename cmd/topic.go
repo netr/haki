@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"slices"
 	"strings"
 	"time"
 
@@ -82,7 +83,7 @@ func runTopic(apiKey, word string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 	if err := topicEntity.CreateCards(ctx, word, generateAnkiCardPrompt()); err != nil {
-		return fmt.Errorf("create vocab entity: %w", err)
+		return fmt.Errorf("create topic entity: %w", err)
 	}
 
 	return nil
@@ -134,7 +135,7 @@ func (t *BaseEntity) listBaseDeckNames() ([]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("get deck names: %w", err)
 	}
-	return anki.RemoveParentDecks(deckNames), nil
+	return anki.FilterDecksByHierarchy(deckNames), nil
 }
 
 func (t *BaseEntity) filterDecksByName(deckNames []string, filter ...string) ([]string, error) {
@@ -237,6 +238,12 @@ func (t *TopicEntity) CreateCards(ctx context.Context, query string, prompt stri
 		return fmt.Errorf("choose deck: %w", err)
 	}
 	slog.Info("deck name chosen", slog.String("deck", t.deckName))
+
+	if !slices.Contains(decks, t.deckName) {
+		if err := t.ankiClient.DeckNames().Create(t.deckName); err != nil {
+			return fmt.Errorf("create deck (%s): %w", t.deckName, err)
+		}
+	}
 
 	if err := t.createAnkiCards(ctx, t.topic, prompt); err != nil {
 		return fmt.Errorf("create anki cards: %w", err)
