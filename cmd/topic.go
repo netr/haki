@@ -24,12 +24,13 @@ func NewTopicCommand(apiKey, outputDir string) *cli.Command {
 			newTopicFlag(),
 			newServiceFlag(),
 			newModelFlag(),
+			newDebugFlag(),
 		},
 		Action: actionFn(
 			NewActionTopic(
 				apiKey,
 				"topic",
-				[]string{"topic", "service", "model"},
+				[]string{"topic", "service", "model", "debug"},
 			)),
 		// Action: actionFn("topic", runTopic(apiKey, topic))
 	}
@@ -74,12 +75,19 @@ func (a ActionTopic) Run(args ...interface{}) error {
 	topic := args[0].(string)
 	service := args[1].(string)
 	model := args[2].(string)
+	debug := args[3].(string)
+
+	skipSave := false
+	if debug == "true" {
+		skipSave = true
+	}
 
 	fmt.Println("Creating topic card for:", topic)
 	fmt.Println("Using service:", service)
 	fmt.Println("Using model:", model)
+	fmt.Println("Debug mode:", debug)
 
-	if err := runTopic(a.apiKey, topic, model, true); err != nil {
+	if err := runTopic(a.apiKey, topic, model, skipSave); err != nil {
 		return fmt.Errorf("action run: %w", err)
 	}
 	return nil

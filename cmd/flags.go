@@ -21,6 +21,15 @@ func newOutFlag() *cli.StringFlag {
 	}
 }
 
+func newDebugFlag() *cli.BoolFlag {
+	return &cli.BoolFlag{
+		Name:    "debug",
+		Aliases: []string{"d"},
+		Value:   false,
+		Usage:   "debug mode",
+	}
+}
+
 func newServiceFlag() *cli.StringFlag {
 	return &cli.StringFlag{
 		Name:    "service",
