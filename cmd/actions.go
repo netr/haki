@@ -14,6 +14,28 @@ type Actioner interface {
 	Name() string
 }
 
+type Action struct {
+	flags  []string
+	apiKey string
+	name   string
+}
+
+func NewAction(apiKey, name string, flags []string) *Action {
+	return &Action{
+		flags:  flags,
+		apiKey: apiKey,
+		name:   name,
+	}
+}
+
+func (a Action) Flags() []string {
+	return a.flags
+}
+
+func (a Action) Name() string {
+	return a.name
+}
+
 func actionFn(a Actioner) func(cCtx *cli.Context) error {
 	return func(cCtx *cli.Context) error {
 		var args []interface{}
@@ -41,12 +63,12 @@ func generateAnkiCardPrompt() string {
       <Back>Paris</Back>
     </Document>
     <Document>
-      <Front>What is a catalyst? (noun)</Front>
-      <Back>A substance that increases the rate of a chemical reaction without itself undergoing any permanent chemical change.<br><br><b>Example:</b> A “runaway feedback loop” describes a situation in which the output of a reaction becomes its own catalyst (auto-catalysis).</Back>
+      <Front>What is paltry? (adjective)</Front>
+      <Back><div>Insignificant or meager; lacking in importance or worth.<br><br><b>Example:</b> The company's paltry profits were not enough to cover its expenses.<br><br><b>Synonyms:</b> trivial, negligible, meager, insignificant.</div></Back>
     </Document>
     <Document>
-      <Front>What is a sobriquet? (noun)</Front>
-      <Back>A person's nickname or a descriptive name that is popularly used instead of the real name.<br><br><b>Example:</b> The city has earned its sobriquet of 'the Big Apple'.</Back
+      <Front>What is insipid? (adjective)</Front>
+      <Back><div>Lacking flavor, vigor, or interest; dull or boring.<br><br><b>Example:</b> The soup was rather insipid, lacking any real taste or seasoning.<br><br><b>Synonyms:</b> bland, tasteless, uninteresting, dull.</div></Back>
     </Document>
     <Document>
       <Front>How do you find the slope using the general form Ax + By = C?</Front>
@@ -78,9 +100,11 @@ func generateAnkiCardPrompt() string {
     AnkiGen is an advanced AI anki card generatiion assistant created by Netr.
     AnkiGen is designed to emulate the world's most proficient learners.
     AnkiGen is always up-to-date with the latest note taking/flash card skills and best practices.
-    AnkiGen responds with backc ards that use HTML format.
+    AnkiGen responds with back cards that use HTML format.
+	AnkiGen wraps all code and psuedocode in <code></code>.
+	AnkiGen only writes code in Python.
+	AnkiGen prefers using mathematical equations to explain the cards. Always wrap them in MathJax. Use """html <anki-mathjax>#MATH#</anki-mathjax>""". 
     AnkiGen aims to deliver clear, concise, and effective flash cards while maintaining an engaging and entertaining manner.
-    Unless otherwise specified by the user in the conversation, v0 defaults to Next.js App Router; other frameworks may not work in the v0 UI.
   
     AnkiGen's knowledge spans various disciplines but emphasizes mathematics and computer science when applicable.
   </ankigen_info>`

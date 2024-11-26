@@ -48,7 +48,8 @@ func runVocab(apiKey, word, outputDir string) error {
 		return fmt.Errorf("new openai api provider: %w", err)
 	}
 	ttsService := ai.NewTTSService(apiKey)
-	vocabEntity := newVocabularyEntity(ankiClient, cardCreator, ttsService, outputDir)
+	imageGenService := ai.NewImageGenService(apiKey)
+	vocabEntity := newVocabularyEntity(ankiClient, cardCreator, ttsService, imageGenService, outputDir)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
@@ -64,22 +65,25 @@ var (
 )
 
 type VocabularyEntity struct {
-	ankiClient  anki.AnkiClienter
-	cardCreator ai.CardCreator
-	ttsService  ai.TTS
-	word        string
-	deckName    string
-	ttsFilePath string
-	outputDir   string
-	cards       []ai.AnkiCard
+	ankiClient      anki.AnkiClienter
+	cardCreator     ai.CardCreator
+	ttsService      ai.TTS
+	imageGenService ai.ImageGen
+	word            string
+	deckName        string
+	ttsFilePath     string
+	imageFilePath   string
+	outputDir       string
+	cards           []ai.AnkiCard
 }
 
-func newVocabularyEntity(ankiClient anki.AnkiClienter, cardCreator ai.CardCreator, ttsService ai.TTS, outputDir string) *VocabularyEntity {
+func newVocabularyEntity(ankiClient anki.AnkiClienter, cardCreator ai.CardCreator, ttsService ai.TTS, imageGenService ai.ImageGen, outputDir string) *VocabularyEntity {
 	v := &VocabularyEntity{
-		ankiClient:  ankiClient,
-		cardCreator: cardCreator,
-		ttsService:  ttsService,
-		outputDir:   outputDir,
+		ankiClient:      ankiClient,
+		cardCreator:     cardCreator,
+		ttsService:      ttsService,
+		imageGenService: imageGenService,
+		outputDir:       outputDir,
 	}
 
 	return v
@@ -108,6 +112,11 @@ func (v *VocabularyEntity) Create(ctx context.Context, word string) error {
 	}
 	slog.Info("tts created", slog.String("file_path", v.ttsFilePath))
 
+	if err := v.createImage(ctx); err != nil {
+		return fmt.Errorf("create image: %w", err)
+	}
+	slog.Info("image created", slog.String("file_path", v.imageFilePath))
+
 	// TODO: FIXME: make sure this model is created before using the app. Preferably something like "Haki::VocabularyWithAudio"
 	const modelName = "VocabularyWithAudio"
 	for _, c := range v.cards {
@@ -115,6 +124,7 @@ func (v *VocabularyEntity) Create(ctx context.Context, word string) error {
 			"Question":   c.Front,
 			"Definition": formatBack(c.Back),
 			"Audio":      fmt.Sprintf("[sound:%s.mp3]", v.word),
+			"Picture":    fmt.Sprintf("<img src=\"%s\">", fmt.Sprintf("%s.webp", v.word)),
 		}
 
 		note := anki.NewNoteBuilder(v.deckName, modelName, data).
@@ -122,7 +132,14 @@ func (v *VocabularyEntity) Create(ctx context.Context, word string) error {
 				v.ttsFilePath,
 				fmt.Sprintf("%s.mp3", v.word),
 				"Front",
-			).Build()
+			).
+			WithPicture(
+				"",
+				v.imageFilePath,
+				fmt.Sprintf("%s.webp", v.word),
+				"Front",
+			).
+			Build()
 
 		id, err := v.ankiClient.Notes().Add(note)
 		if err != nil {
@@ -173,9 +190,29 @@ func (v *VocabularyEntity) createTTS(ctx context.Context) error {
 	v.ttsFilePath = path
 	return nil
 }
-
 func makeTTSFilePath(outputDir, word string) (string, error) {
 	return filepath.Abs(fmt.Sprintf("%s/data/%s.mp3", outputDir, word))
+}
+
+// TODO: Consolidate this with createTTS?
+func (v *VocabularyEntity) createImage(ctx context.Context) error {
+	imgBytes, err := v.imageGenService.Generate(ctx, v.word)
+	if err != nil {
+		return fmt.Errorf("generate image: %w", err)
+	}
+	path, err := makeImageFilePath(v.outputDir, v.word)
+	if err != nil {
+		return fmt.Errorf("make file path: %w", err)
+	}
+	err = lib.SaveFile(path, imgBytes)
+	if err != nil {
+		return fmt.Errorf("save file: %w", err)
+	}
+	v.imageFilePath = path
+	return nil
+}
+func makeImageFilePath(outputDir, word string) (string, error) {
+	return filepath.Abs(fmt.Sprintf("%s/data/%s.webp", outputDir, word))
 }
 
 func (v *VocabularyEntity) createAnkiCards(ctx context.Context) error {

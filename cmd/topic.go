@@ -113,7 +113,8 @@ func runTopic(apiKey, word, model string, skipSave bool) error {
 }
 
 var (
-	ErrQueryRequired = fmt.Errorf("query is required")
+	ErrQueryRequired     = fmt.Errorf("query is required")
+	ErrInvalidOutputPath = fmt.Errorf("invalid output path")
 )
 
 type ErrFlagValueMissing struct {

@@ -112,9 +112,16 @@ func (nb *NoteBuilder) WithVideo(url, filename string, fields ...string) *NoteBu
 }
 
 // WithPicture adds a picture file to the note
-func (nb *NoteBuilder) WithPicture(url, filename string, fields ...string) *NoteBuilder {
+func (nb *NoteBuilder) WithPicture(url, path, filename string, fields ...string) *NoteBuilder {
+	if filename == "" {
+		return nb
+	}
+	if len(fields) == 0 {
+		fields = []string{"Front"}
+	}
 	nb.note.Picture = append(nb.note.Picture, NoteMedia{
 		URL:      url,
+		Path:     path,
 		Filename: filename,
 		Fields:   fields,
 	})

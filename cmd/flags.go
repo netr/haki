@@ -14,10 +14,11 @@ func newWordFlag() *cli.StringFlag {
 
 func newOutFlag() *cli.StringFlag {
 	return &cli.StringFlag{
-		Name:    "out",
-		Aliases: []string{"o"},
-		Value:   "",
-		Usage:   "output file",
+		Name:     "out",
+		Aliases:  []string{"o"},
+		Value:    "",
+		Required: false,
+		Usage:    "output file",
 	}
 }
 
