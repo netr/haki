@@ -28,9 +28,13 @@ type AnkiClienter interface {
 type Client struct {
 	baseURL    string
 	httpClient *http.Client
-	notes      *NoteService
-	modelNames *ModelNameService
-	deckNames  *DeckNameService
+	services   *ClientServices
+}
+
+type ClientServices struct {
+	Notes      *NoteService
+	ModelNames *ModelNameService
+	DeckNames  *DeckNameService
 }
 
 // requestResult represents the structure of the Anki API response.
@@ -50,25 +54,27 @@ func NewClient(baseURL string) *Client {
 			Timeout: 10 * time.Second,
 		},
 	}
-	c.notes = NewNoteService(c)
-	c.modelNames = NewModelNameService(c)
-	c.deckNames = NewDeckNameService(c)
+	c.services = &ClientServices{
+		Notes:      NewNoteService(c),
+		ModelNames: NewModelNameService(c),
+		DeckNames:  NewDeckNameService(c),
+	}
 	return c
 }
 
 // Notes returns the NoteService for the Anki API client.
 func (c *Client) Notes() *NoteService {
-	return c.notes
+	return c.services.Notes
 }
 
 // ModelNames returns the ModelNameService for the Anki API client.
 func (c *Client) ModelNames() *ModelNameService {
-	return c.modelNames
+	return c.services.ModelNames
 }
 
 // DeckNames returns the DeckNameService for the Anki API client.
 func (c *Client) DeckNames() *DeckNameService {
-	return c.deckNames
+	return c.services.DeckNames
 }
 
 // SetHTTPClient sets a custom HTTP client for the Anki API client.

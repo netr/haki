@@ -8,7 +8,7 @@ import (
 )
 
 func Test_NewAICardCreator_WorkingAsExpected(t *testing.T) {
-	o, err := ai.NewAICardCreator(ai.OpenAI, "key", ai.GPT3Curie)
+	o, err := ai.NewCardCreator(ai.OpenAI, "key", ai.GPT3Curie)
 	if err != nil || o == nil {
 		t.Fatal("openai model provider is nil")
 	}
@@ -23,7 +23,7 @@ func Test_NewAICardCreator_WorkingAsExpected(t *testing.T) {
 }
 
 func Test_NewAICardCreator_Anthropic_Unimplemented_Fail(t *testing.T) {
-	o, err := ai.NewAICardCreator(ai.Anthropic, "key", ai.GPT4Turbo20240409)
+	o, err := ai.NewCardCreator(ai.Anthropic, "key", ai.GPT4Turbo20240409)
 	if err == nil || o != nil {
 		if !errors.Is(err, ai.ErrUnimplemented) {
 			t.Fatal("anthropic model provider should return ErrUnimplemented")

@@ -20,3 +20,21 @@ func newOutFlag() *cli.StringFlag {
 		Usage:   "output file",
 	}
 }
+
+func newServiceFlag() *cli.StringFlag {
+	return &cli.StringFlag{
+		Name:    "service",
+		Aliases: []string{"svc"},
+		Value:   "openai",
+		Usage:   "ai api service",
+	}
+}
+
+func newModelFlag() *cli.StringFlag {
+	return &cli.StringFlag{
+		Name:    "model",
+		Aliases: []string{"m"},
+		Value:   "gpt-4o-2024-11-20",
+		Usage:   "ai model",
+	}
+}

@@ -43,7 +43,7 @@ func actionVocab(apiKey, outputDir string) func(cCtx *cli.Context) error {
 
 func runVocab(apiKey, word, outputDir string) error {
 	ankiClient := anki.NewClient(lib.GetEnv("ANKI_CONNECT_URL", "http://localhost:8765"))
-	cardCreator, err := ai.NewAICardCreator(ai.OpenAI, apiKey)
+	cardCreator, err := ai.NewCardCreator(ai.OpenAI, apiKey)
 	if err != nil {
 		return fmt.Errorf("new openai api provider: %w", err)
 	}
@@ -65,7 +65,7 @@ var (
 
 type VocabularyEntity struct {
 	ankiClient  anki.AnkiClienter
-	cardCreator ai.AICardCreator
+	cardCreator ai.CardCreator
 	ttsService  ai.TTS
 	word        string
 	deckName    string
@@ -74,7 +74,7 @@ type VocabularyEntity struct {
 	cards       []ai.AnkiCard
 }
 
-func newVocabularyEntity(ankiClient anki.AnkiClienter, cardCreator ai.AICardCreator, ttsService ai.TTS, outputDir string) *VocabularyEntity {
+func newVocabularyEntity(ankiClient anki.AnkiClienter, cardCreator ai.CardCreator, ttsService ai.TTS, outputDir string) *VocabularyEntity {
 	v := &VocabularyEntity{
 		ankiClient:  ankiClient,
 		cardCreator: cardCreator,

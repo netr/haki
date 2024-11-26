@@ -49,7 +49,7 @@ func (api *OpenAIClient) createChatCompletion(ctx context.Context, request opena
 	return api.client.CreateChatCompletion(ctx, request)
 }
 
-// OpenAICardCreator is an implementation of the AICardCreator interface for OpenAI.
+// OpenAICardCreator is an implementation of the CardCreator interface for OpenAI.
 type OpenAICardCreator struct {
 	client *OpenAIClient
 }
@@ -144,8 +144,9 @@ func (s *OpenAICardCreator) Create(ctx context.Context, deckName string, text st
 	resp, err := s.client.createChatCompletion(
 		ctx,
 		openai.ChatCompletionRequest{
-			Model:     s.ModelName().String(),
-			MaxTokens: 4096,
+			Model:       s.ModelName().String(),
+			MaxTokens:   4096,
+			Temperature: 0.1,
 			Messages: []openai.ChatCompletionMessage{
 				{
 					Role:    openai.ChatMessageRoleSystem,
@@ -220,6 +221,10 @@ type createAnkiCardsData struct {
 // nolint:gocyclo
 func isValidOpenAIModelName(name string) bool {
 	switch name {
+	case string(GPTo1Mini0912):
+	case string(GPTo1Mini):
+	case string(GPTo1Preview0912):
+	case string(GPTo1Preview):
 	case string(GPT432K0613):
 	case string(GPT432K0314):
 	case string(GPT432K):
@@ -228,6 +233,7 @@ func isValidOpenAIModelName(name string) bool {
 	case string(GPT4o):
 	case string(GPT4o20240513):
 	case string(GPT4o20240806):
+	case string(GPT4o20241120):
 	case string(GPT4oMini):
 	case string(GPT4oMini20240718):
 	case string(GPT4Turbo):
@@ -261,6 +267,10 @@ func isValidOpenAIModelName(name string) bool {
 type OpenAIModelName string
 
 const (
+	GPTo1Mini0912         OpenAIModelName = "o1-mini-2024-09-12"
+	GPTo1Mini             OpenAIModelName = "o1-mini"
+	GPTo1Preview0912      OpenAIModelName = "o1-preview-2024-09-12"
+	GPTo1Preview          OpenAIModelName = "o1-preview"
 	GPT432K0613           OpenAIModelName = "gpt-4-32k-0613"
 	GPT432K0314           OpenAIModelName = "gpt-4-32k-0314"
 	GPT432K               OpenAIModelName = "gpt-4-32k"
@@ -269,6 +279,7 @@ const (
 	GPT4o                 OpenAIModelName = "gpt-4o"
 	GPT4o20240513         OpenAIModelName = "gpt-4o-2024-05-13"
 	GPT4o20240806         OpenAIModelName = "gpt-4o-2024-08-06"
+	GPT4o20241120         OpenAIModelName = "gpt-4o-2024-11-20"
 	GPT4oMini             OpenAIModelName = "gpt-4o-mini"
 	GPT4oMini20240718     OpenAIModelName = "gpt-4o-mini-2024-07-18"
 	GPT4Turbo             OpenAIModelName = "gpt-4-turbo"

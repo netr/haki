@@ -7,7 +7,7 @@ import (
 	"github.com/netr/haki/anki"
 )
 
-func Test_GetChildDecks(t *testing.T) {
+func Test_FilterDecksByHierarchy(t *testing.T) {
 	t.Parallel()
 
 	test := []struct {

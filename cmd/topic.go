@@ -19,9 +19,18 @@ func NewTopicCommand(apiKey, outputDir string) *cli.Command {
 	return &cli.Command{
 		Name:      "topic",
 		Usage:     "Create a topical Anki card using the specified topic.",
-		ArgsUsage: "--topic <topic>",
-		Flags:     []cli.Flag{newTopicFlag()},
-		Action:    actionFn(NewActionTopic(apiKey, "topic", []string{"topic"})),
+		ArgsUsage: "--topic <topic> --service <service> --model <model>",
+		Flags: []cli.Flag{
+			newTopicFlag(),
+			newServiceFlag(),
+			newModelFlag(),
+		},
+		Action: actionFn(
+			NewActionTopic(
+				apiKey,
+				"topic",
+				[]string{"topic", "service", "model"},
+			)),
 		// Action: actionFn("topic", runTopic(apiKey, topic))
 	}
 }
@@ -63,8 +72,14 @@ func (a ActionTopic) Run(args ...interface{}) error {
 		return fmt.Errorf("action run: %w", ErrQueryRequired)
 	}
 	topic := args[0].(string)
+	service := args[1].(string)
+	model := args[2].(string)
 
-	if err := runTopic(a.apiKey, topic); err != nil {
+	fmt.Println("Creating topic card for:", topic)
+	fmt.Println("Using service:", service)
+	fmt.Println("Using model:", model)
+
+	if err := runTopic(a.apiKey, topic, model, true); err != nil {
 		return fmt.Errorf("action run: %w", err)
 	}
 	return nil
@@ -73,16 +88,16 @@ func (a ActionTopic) Run(args ...interface{}) error {
 // runTopic creates an anki client, card creator and builds the anki card.
 // doesn't need to be part of the action topic struct because the problem terminates after finishing.
 // if we make this a long running program, we should put this in the struct and hold references to the client/creator.
-func runTopic(apiKey, word string) error {
-	cardCreator, err := ai.NewAICardCreator(ai.OpenAI, apiKey)
+func runTopic(apiKey, word, model string, skipSave bool) error {
+	cardCreator, err := ai.NewCardCreator(ai.OpenAI, apiKey, ai.OpenAIModelName(model))
 	if err != nil {
-		return fmt.Errorf("new openai api provider: %w", err)
+		return fmt.Errorf("new openai card creator (%s): %w", model, err)
 	}
 	topicEntity := newTopicEntity(cardCreator)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
-	if err := topicEntity.CreateCards(ctx, word, generateAnkiCardPrompt()); err != nil {
+	if err := topicEntity.CreateCards(ctx, word, generateAnkiCardPrompt(), skipSave); err != nil {
 		return fmt.Errorf("create topic entity: %w", err)
 	}
 
@@ -103,12 +118,12 @@ func (e *ErrFlagValueMissing) Error() string {
 
 type BaseEntity struct {
 	ankiClient  anki.AnkiClienter
-	cardCreator ai.AICardCreator
+	cardCreator ai.CardCreator
 	deckName    string
 	cards       []ai.AnkiCard
 }
 
-func NewBaseEntity(cardCreator ai.AICardCreator) *BaseEntity {
+func NewBaseEntity(cardCreator ai.CardCreator) *BaseEntity {
 	return &BaseEntity{
 		ankiClient:  anki.NewClient(lib.GetEnv("ANKI_CONNECT_URL", "http://localhost:8765")),
 		cardCreator: cardCreator,
@@ -154,7 +169,7 @@ func (t *BaseEntity) filterDecksByName(deckNames []string, filter ...string) ([]
 }
 
 // TODO: FIXME: make sure this model is created before using the app. Preferably something like "Haki::VocabularyWithAudio"
-func (t *BaseEntity) addCardsToAnki() error {
+func (t *BaseEntity) saveCardsToAnki() error {
 	const modelName = "Basic"
 	for _, c := range t.cards {
 		data := map[string]interface{}{
@@ -204,7 +219,7 @@ func (t *BaseEntity) chooseDeck(ctx context.Context, query string, decks []strin
 }
 
 type CardCreatorEntity interface {
-	CreateCards(ctx context.Context, query string, prompt string) error
+	CreateCards(ctx context.Context, query string, prompt string, skipSave bool) error
 }
 
 type TopicEntity struct {
@@ -212,14 +227,14 @@ type TopicEntity struct {
 	topic string
 }
 
-func newTopicEntity(cardCreator ai.AICardCreator) CardCreatorEntity {
+func newTopicEntity(cardCreator ai.CardCreator) CardCreatorEntity {
 	t := &TopicEntity{
 		BaseEntity: NewBaseEntity(cardCreator),
 	}
 	return t
 }
 
-func (t *TopicEntity) CreateCards(ctx context.Context, query string, prompt string) error {
+func (t *TopicEntity) CreateCards(ctx context.Context, query string, prompt string, skipSave bool) error {
 	slog.Info("creating topic card", slog.String("topic", query))
 
 	if query == "" {
@@ -250,8 +265,10 @@ func (t *TopicEntity) CreateCards(ctx context.Context, query string, prompt stri
 	}
 	slog.Info("anki card(s) created", slog.Int("count", len(t.cards)))
 
-	if err := t.addCardsToAnki(); err != nil {
-		return fmt.Errorf("create anki cards: %w", err)
+	if !skipSave {
+		if err := t.saveCardsToAnki(); err != nil {
+			return fmt.Errorf("create anki cards: %w", err)
+		}
 	}
 
 	fmt.Println("")
