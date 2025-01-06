@@ -1,227 +1,175 @@
 package main
 
 import (
-	"context"
+	"bufio"
 	"fmt"
 	"log"
 	"log/slog"
 	"os"
-	"strconv"
+	"path/filepath"
+	"runtime"
+	"strings"
 	"time"
 
-	"github.com/joho/godotenv"
-	"github.com/netr/haki/ai"
-	"github.com/netr/haki/anki"
-	"github.com/netr/haki/lib"
-	"github.com/sashabaranov/go-openai"
 	"github.com/urfave/cli/v2"
+
+	"github.com/netr/haki/cmd"
+	"github.com/netr/haki/lib"
 )
 
-func actionCardTest(cCtx *cli.Context) error {
-	word := cCtx.String("word")
-	if word == "" {
-		return fmt.Errorf("word is required --word <word>")
-	}
-
-	if err := runCardTest(word); err != nil {
-		slog.Error("run", slog.String("action", "card_test"), slog.String("error", err.Error()))
-		return err
-	}
-	return nil
-}
-
-func runCardTest(word string) error {
-	apiToken := os.Getenv("OPENAI_API_KEY")
-	if apiToken == "" {
-		return fmt.Errorf("OPENAI_API_KEY is not set")
-	}
-
-	oa, err := ai.NewOpenAICardCreator(apiToken)
-	if err != nil {
-		return fmt.Errorf("new openai card creator: %w", err)
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	ans, err := oa.Create(ctx, "test", word)
-	if err != nil {
-		return fmt.Errorf("create card: %w", err)
-	}
-
-	fmt.Println(ans)
-	return nil
-}
-
-func actionTTS(cCtx *cli.Context) error {
-	word := cCtx.String("word")
-	if word == "" {
-		return fmt.Errorf("word is required --word <word>")
-	}
-	// optional output file
-	output := cCtx.String("out")
-	if output != "" {
-		if err := lib.ValidateOutputPath(output); err != nil {
-			return fmt.Errorf("validate output path: %w", err)
-		}
-	}
-
-	if err := runTTS(word, output); err != nil {
-		slog.Error("run", slog.String("action", "tts"), slog.String("error", err.Error()))
-		return err
-	}
-	return nil
-}
-
-func runTTS(word string, output string) error {
-	apiToken := os.Getenv("OPENAI_API_KEY")
-	if apiToken == "" {
-		return fmt.Errorf("OPENAI_API_KEY is not set")
-	}
-
-	ttsService := ai.NewTTSService(apiToken)
-
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	bytes, err := ttsService.Generate(ctx, word, openai.VoiceAlloy, openai.SpeechResponseFormatMp3)
-	if err != nil {
-		return fmt.Errorf("generate mp3: %w", err)
-	}
-
-	if output == "" {
-		output = fmt.Sprintf("data/%s.mp3", word)
-	}
-	if err = lib.SaveFile(output, bytes); err != nil {
-		return fmt.Errorf("save file: %w", err)
-	}
-
-	slog.Info("tts created", slog.String("word", word), slog.String("output", output))
-	return nil
-}
-
-func actionVocab(cCtx *cli.Context) error {
-	word := cCtx.String("word")
-	if word == "" {
-		return fmt.Errorf("word is required --word <word>")
-	}
-
-	if err := runVocab(word); err != nil {
-		slog.Error("run", slog.String("action", "vocab"), slog.String("error", err.Error()))
-		return err
-	}
-	return nil
-}
-
-func runVocab(word string) error {
-	apiToken := os.Getenv("OPENAI_API_KEY")
-	if apiToken == "" {
-		return fmt.Errorf("OPENAI_API_KEY is not set")
-	}
-
-	ankiClient := anki.NewClient(getEnv("ANKI_CONNECT_URL", "http://localhost:8765"))
-	aiService, err := ai.NewAICardCreator(ai.OpenAI, apiToken)
-	if err != nil {
-		return fmt.Errorf("new openai api provider: %w", err)
-	}
-	ttsService := ai.NewTTSService(apiToken)
-
-	vocabEntity := newVocabularyEntity(ankiClient, aiService, ttsService)
-
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
-	defer cancel()
-
-	if err := vocabEntity.Create(ctx, word); err != nil {
-		return fmt.Errorf("create vocab entity: %w", err)
-	}
-
-	return nil
-}
-
 func main() {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("failed loading .env file")
-	}
-
-	if err := initLogger(newLoggerConfig("haki")); err != nil {
-		log.Fatalf("failed initializing logger: %v", err)
-	}
-
-	wordFlag := &cli.StringFlag{
-		Name:     "word",
-		Aliases:  []string{"w"},
-		Value:    "",
-		Required: true,
-		Usage:    "word to create a card for",
-	}
-
-	outFlag := &cli.StringFlag{
-		Name:    "out",
-		Aliases: []string{"o"},
-		Value:   "",
-		Usage:   "output file",
-	}
-
-	app := &cli.App{
-		Name:  "haki",
-		Usage: "haki is a tool to help you create anki cards using AI and AnkiConnect",
-		Authors: []*cli.Author{
-			{
-				Name:  "Corey Jackson (netr)",
-				Email: "programmatical@gmail.com",
-			},
-		},
-		Version:  "0.0.1",
-		Compiled: time.Now(),
-		Commands: []*cli.Command{
-			{
-				Name:      "vocab",
-				Usage:     "Create a vocabulary Anki card using the specified word.",
-				ArgsUsage: "--word <word>",
-				Flags:     []cli.Flag{wordFlag},
-				Action:    actionVocab,
-			},
-			{
-				Name:      "tts",
-				Usage:     "Create a text-to-speech audio file for the specified word.",
-				ArgsUsage: "--word <word> [--out <output file>]",
-				Flags:     []cli.Flag{wordFlag, outFlag},
-				Action:    actionTTS,
-			},
-			{
-				Name:      "cardtest",
-				Usage:     "Test creating a card for the specified word.",
-				ArgsUsage: "--word <word>",
-				Flags:     []cli.Flag{wordFlag},
-				Action:    actionCardTest,
-				Aliases:   []string{"test"},
-			},
-		},
-	}
-
-	if err := app.Run(os.Args); err != nil {
+	cfg := mustSetup()
+	app := newApplication(cfg)
+	if err := app.run(os.Args); err != nil {
 		slog.Error("run app", slog.String("error", err.Error()))
 		os.Exit(1)
 	}
 }
 
-func getEnv(key string, defaultValue string) string {
-	value := os.Getenv(key)
-	if value == "" {
-		return defaultValue
+func mustSetup() *Config {
+	hakiDir, err := getHakiDirPath()
+	if err != nil {
+		log.Fatalf("failed getting haki directory path: %v", err)
 	}
-	return value
+	cfgFile, err := getConfigPath(hakiDir)
+	if err != nil {
+		log.Fatalf("failed getting config path: %v", err)
+	}
+	cfg, err := initConfig(cfgFile)
+	if err != nil {
+		log.Fatalf("failed initializing config: %v", err)
+	}
+	if err := initLogger(cfg); err != nil {
+		log.Fatalf("failed initializing logger: %v", err)
+	}
+
+	cfg.hakiDir = hakiDir
+	return cfg
 }
 
-func getEnvInt(key string, defaultValue int) int {
-	value := os.Getenv(key)
-	if value == "" {
-		return defaultValue
+type application struct {
+	config  *Config
+	app     *cli.App
+	hakiDir string
+}
+
+func newApplication(cfg *Config) *application {
+	app := &application{
+		config:  cfg,
+		app:     &cli.App{},
+		hakiDir: filepath.Dir(cfg.fileName),
 	}
-	ivalue, err := strconv.Atoi(value)
+	app.setupAppMetadata()
+	app.registerCommands()
+	return app
+}
+
+// registerCommands registers all the commands for the app.
+func (a *application) registerCommands() *cli.App {
+	a.app.Commands = []*cli.Command{
+		cmd.NewTTSCommand(a.config.APIKeys.OpenAI, a.config.hakiDir),
+		cmd.NewVocabCommand(a.config.APIKeys.OpenAI, a.config.hakiDir),
+		cmd.NewTopicCommand(a.config.APIKeys.OpenAI, a.config.hakiDir),
+		cmd.NewImageCommand(a.config.APIKeys.OpenAI, a.config.hakiDir),
+		cmd.NewCardTestCommand(a.config.APIKeys.OpenAI),
+	}
+	return a.app
+}
+
+// setupAppMetadata sets up the app metadata.
+func (a *application) setupAppMetadata() *cli.App {
+	a.app.Name = "haki"
+	a.app.Version = "0.1.0"
+	a.app.Usage = "haki is a tool to help you create anki cards using AI and AnkiConnect"
+	a.app.Authors = []*cli.Author{
+		{
+			Name:  "Corey Jackson (netr)",
+			Email: "corey@netr.dev",
+		},
+	}
+	a.app.Compiled = time.Now()
+	a.app.EnableBashCompletion = true
+	a.app.Before = a.beforeAppWithConfig()
+	return a.app
+}
+
+// run runs the application.
+func (a *application) run(args []string) error {
+	return a.app.Run(args)
+}
+
+func (a *application) beforeAppWithConfig() cli.BeforeFunc {
+	return func(_ *cli.Context) error {
+		if a.config.APIKeys.OpenAI == "" {
+			fmt.Printf("OpenAI API Key is not set.\nHaki needs the OpenAI API to generate cards and automatically place them in respective decks.\nIf you don't have an API key, you can learn how to get one here: https://platform.openai.com/docs/api-reference/introduction\n\n")
+			apiKey, err := askUserFor("Please enter your OpenAI API Key: ")
+			if err != nil {
+				log.Fatalf("failed asking user for OpenAI API Key: %v", err)
+			}
+			a.config.APIKeys.OpenAI = strings.TrimSpace(apiKey)
+			if err := a.config.Save(); err != nil {
+				log.Fatalf("failed saving config: %v", err)
+			}
+		}
+
+		// TODO: Add Anthropic API Key check here
+		// TODO: Add AnkiConnect Model check here
+		return nil
+	}
+}
+
+func askUserFor(input string) (string, error) {
+	reader := bufio.NewReader(os.Stdin)
+	fmt.Print(input)
+	output, err := reader.ReadString('\n')
 	if err != nil {
-		return defaultValue
+		return "", fmt.Errorf("reading input: %w", err)
 	}
-	return ivalue
+	return output, nil
+}
+
+// getConfigPath returns the path to the configuration file 'haki.json' based on the OS.
+func getConfigPath(hakiDir string) (string, error) {
+	configPath := filepath.Join(hakiDir, "config.json")
+	return configPath, nil
+}
+
+// ErrUnsupportedPlatform is returned when the platform is not supported.
+var ErrUnsupportedPlatform = fmt.Errorf("unsupported platform")
+
+// getHakiDirPath returns the path to the haki directory based on the OS.
+// If the config.json file exists in the current directory, it will return the current directory. This allows for better development and testing.
+func getHakiDirPath() (string, error) {
+	if lib.FileExists("./config.json") {
+		return ".", nil
+	}
+
+	var basePath string
+	switch runtime.GOOS {
+	case "windows":
+		basePath = os.Getenv("LOCALAPPDATA")
+	case "darwin", "linux":
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return "", err
+		}
+		if runtime.GOOS == "darwin" {
+			basePath = filepath.Join(home, "Library", "Application Support")
+		} else {
+			basePath = home // For Linux, use the home directory
+		}
+		log.Println(home, basePath)
+	default:
+		return "", ErrUnsupportedPlatform
+	}
+
+	hakiDir := filepath.Join(basePath, ".config", "haki")
+	if err := os.MkdirAll(hakiDir, 0755); err != nil {
+		return "", err
+	}
+	dataDir := filepath.Join(hakiDir, "data")
+	if err := os.MkdirAll(dataDir, 0755); err != nil {
+		return "", err
+	}
+	return hakiDir, nil
 }

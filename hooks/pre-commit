@@ -30,7 +30,7 @@ fi
 # Run golangci-lint (if installed)
 if command -v golangci-lint >/dev/null 2>&1; then
     echo "Running golangci-lint..."
-    golangci-lint run --fast --timeout 5m > /dev/null 2>&1
+    golangci-lint run --fix --fast --timeout 5m > /dev/null 2>&1
     if [ $? -ne 0 ]; then
         echo "${RED}golangci-lint found issues. Please fix them and try again.${NC}"
         golangci-lint run --fast --timeout 5m

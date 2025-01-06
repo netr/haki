@@ -33,3 +33,21 @@ func (svc *DeckNameService) GetNamesAndIds() (DeckNamesAndIds, error) {
 	}
 	return decks, nil
 }
+
+type CreateDeckParams struct {
+	Deck string `json:"deck"`
+}
+
+func (svc *DeckNameService) Create(name string) error {
+	var id float64
+
+	if err := svc.client.sendAndUnmarshal(
+		"createDeck",
+		CreateDeckParams{Deck: name},
+		&id,
+	); err != nil {
+		return fmt.Errorf("createDeck: %w", err)
+	}
+
+	return nil
+}

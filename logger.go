@@ -14,48 +14,14 @@ import (
 	"github.com/lmittmann/tint"
 )
 
-type LoggerConfig struct {
-	Level     string     `json:"level"`
-	Format    string     `json:"format"`
-	Output    string     `json:"output"`
-	File      LoggerFile `json:"file"`
-	Command   string     `json:"command"`
-	DebugMode bool       `json:"debug_mode"`
-}
-
-type LoggerFile struct {
-	Path       string `json:"path"`
-	Name       string `json:"name"`
-	MaxSize    int    `json:"max_size"`
-	MaxBackups int    `json:"max_backups"`
-	MaxAge     int    `json:"max_age"`
-}
-
-func newLoggerConfig(command string) *LoggerConfig {
-	return &LoggerConfig{
-		Level:     getEnv("LOG_LEVEL", "info"),
-		Format:    getEnv("LOG_FORMAT", "text"),
-		Output:    getEnv("LOG_OUTPUT", "stdout"),
-		DebugMode: getEnv("DEBUG_MODE", "false") == "true",
-		Command:   command,
-		File: LoggerFile{
-			Path:       getEnv("LOG_FILE_PATH", "./logs"),
-			Name:       getEnv("LOG_FILE_NAME", "app.log"),
-			MaxSize:    getEnvInt("LOG_FILE_MAX_SIZE", 100),
-			MaxBackups: getEnvInt("LOG_FILE_MAX_BACKUPS", 3),
-			MaxAge:     getEnvInt("LOG_FILE_MAX_AGE", 28),
-		},
-	}
-}
-
-func initLogger(cfg *LoggerConfig) error {
+func initLogger(cfg *Config) error {
 	var (
 		logWriter  io.Writer
 		logHandler slog.Handler
 		err        error
 	)
 	sLvl := slog.LevelDebug
-	switch cfg.Level {
+	switch cfg.Logger.Level {
 	case "debug":
 		sLvl = slog.LevelDebug
 	case "info":
@@ -66,17 +32,17 @@ func initLogger(cfg *LoggerConfig) error {
 		sLvl = slog.LevelError
 	}
 
-	switch cfg.Output {
+	switch cfg.Logger.Output {
 	case "stdout":
 		logWriter = os.Stdout
 	case "stderr":
 		logWriter = os.Stderr
 	case "file":
-		cfg.File.Name, err = createLogFilename(cfg)
+		cfg.Logger.File.Name, err = createLogFilename(cfg.Logger)
 		if err != nil {
 			return fmt.Errorf("create log filename: %w", err)
 		}
-		file, err := os.OpenFile(path.Join(cfg.File.Path, cfg.File.Name), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+		file, err := os.OpenFile(path.Join(cfg.Logger.File.Path, cfg.Logger.File.Name), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 		if err != nil {
 			return fmt.Errorf("open log file: %w", err)
 		}
@@ -96,9 +62,9 @@ func initLogger(cfg *LoggerConfig) error {
 	}
 
 	logHandler = slog.NewTextHandler(logWriter, opts)
-	if cfg.Format == "json" {
+	if cfg.Logger.Format == "json" {
 		logHandler = slog.NewJSONHandler(logWriter, opts)
-	} else if cfg.Format == "tint" {
+	} else if cfg.Logger.Format == "tint" {
 		logHandler = tint.NewHandler(logWriter, &tint.Options{
 			Level:      sLvl,
 			TimeFormat: time.Kitchen,
@@ -118,10 +84,11 @@ func initLogger(cfg *LoggerConfig) error {
 }
 
 var (
+	// ErrInvalidLogFilename is returned when the log filename is invalid.
 	ErrInvalidLogFilename = errors.New("invalid log filename")
 )
 
-func createLogFilename(cfg *LoggerConfig) (string, error) {
+func createLogFilename(cfg *ConfigLogger) (string, error) {
 	fnSplit := strings.Split(cfg.File.Name, ".")
 	fName := fnSplit[0]
 	switch len(fnSplit) {

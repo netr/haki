@@ -27,19 +27,19 @@ type ModelNamer interface {
 	String() string
 }
 
-// AICardCreator defines the interface for AI API providers.
-type AICardCreator interface {
+// CardCreator defines the interface for AI API providers.
+type CardCreator interface {
 	// ChooseDeck selects a deck based on provided deck names and text.
 	ChooseDeck(ctx context.Context, deckNames []string, text string) (string, error)
 	// Create generates Anki cards for the given deck and text.
-	Create(ctx context.Context, deckName string, text string) ([]AnkiCard, error)
+	Create(ctx context.Context, deckName string, text string, prompt string) ([]AnkiCard, error)
 	// ModelName returns the model name used by the AI API provider.
 	ModelName() ModelNamer
 }
 
-// NewAICardCreator creates a new AICardCreator based on the given name and API key.
+// NewCardCreator creates a new CardCreator based on the given name and API key.
 // It optionally accepts a Modeler to specify the model type.
-func NewAICardCreator(name APIProviderName, apiKey string, modelName ...ModelNamer) (AICardCreator, error) {
+func NewCardCreator(name APIProviderName, apiKey string, modelName ...ModelNamer) (CardCreator, error) {
 	switch name {
 	case OpenAI:
 		if len(modelName) == 0 {

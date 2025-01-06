@@ -48,6 +48,10 @@ lint:
 	@echo "Linting..."
 	@golangci-lint run
 
+lint-fix:
+	@echo "Linting..."
+	@golangci-lint run --fix
+
 fmt:
 	@echo "Formatting..."
 	@go fmt ./...

@@ -14,6 +14,14 @@ var (
 	ErrInvalidOpenAIModel = errors.New("invalid openai model")
 )
 
+type ErrMissingKey struct {
+	Key string
+}
+
+func (e ErrMissingKey) Error() string {
+	return "missing key: " + e.Key
+}
+
 // OpenAIClient wraps the OpenAI API client
 type OpenAIClient struct {
 	client    *openai.Client
@@ -41,7 +49,7 @@ func (api *OpenAIClient) createChatCompletion(ctx context.Context, request opena
 	return api.client.CreateChatCompletion(ctx, request)
 }
 
-// OpenAICardCreator is an implementation of the AICardCreator interface for OpenAI.
+// OpenAICardCreator is an implementation of the CardCreator interface for OpenAI.
 type OpenAICardCreator struct {
 	client *OpenAIClient
 }
@@ -123,7 +131,7 @@ func (s *OpenAICardCreator) ChooseDeck(ctx context.Context, deckNames []string, 
 	}
 	for _, key := range []string{"Deck"} {
 		if _, ok := result[key]; !ok {
-			return "", errors.New("missing key: " + key)
+			return "", ErrMissingKey{Key: key}
 		}
 	}
 
@@ -131,41 +139,18 @@ func (s *OpenAICardCreator) ChooseDeck(ctx context.Context, deckNames []string, 
 }
 
 // Create uses the OpenAI API to generate AnkiCard's (front and back) for the given deck and text.
-func (s *OpenAICardCreator) Create(ctx context.Context, deckName string, text string) ([]AnkiCard, error) {
+func (s *OpenAICardCreator) Create(ctx context.Context, deckName string, text string, prompt string) ([]AnkiCard, error) {
+
 	resp, err := s.client.createChatCompletion(
 		ctx,
 		openai.ChatCompletionRequest{
-			Model:     s.ModelName().String(),
-			MaxTokens: 4096,
+			Model:       s.ModelName().String(),
+			MaxTokens:   4096,
+			Temperature: 0.1,
 			Messages: []openai.ChatCompletionMessage{
 				{
-					Role: openai.ChatMessageRoleSystem,
-					Content: "Please enter a string, and we will create Anki cards with just a front and back for you. We will always ensure the cards are useful, helpful, descriptive, and void of wasteful questions: " +
-						"Front: The front of the anki card.\n" +
-						"Back: The back of the anki card.\n" +
-						"\n\n" +
-						"Examples:\n============\n```" +
-						"Front: What is the capital of France?\n" +
-						"Back: Paris\n" +
-						"-----\n" +
-						"Front: What is a catalyst? (noun)\n" +
-						"Back: A substance that increases the rate of a chemical reaction without itself undergoing any permanent chemical change.\n" +
-						"Example A “runaway feedback loop” describes a situation in which the output of a reaction becomes its own catalyst (auto-catalysis)." +
-						"-----\n" +
-						"Front: What is a sobriquet? (noun)\n" +
-						"Back: A person's nickname or a descriptive name that is popularly used instead of the real name.\n" +
-						"Example: The city has earned its sobriquet of 'the Big Apple'." +
-						"-----\n" +
-						"Front: How do you find the slope using the general form Ax + By = C?\n" +
-						"Back: The slope is -{A \\over B}\n" +
-						"-----\n" +
-						"Front: What are the four most common reasons an inequality sign must be reversed?\n" +
-						"Back: The four most common reasons an inequality sign must be reversed are:\n" +
-						"- Multiplying or dividing both sides by a negative number: When you multiply or divide both sides of an inequality by a negative number, the inequality sign must be reversed.\n" +
-						"- Taking the reciprocal of both sides: If both sides of the inequality are positive and you take the reciprocal of each side, the inequality sign must be reversed.\n" +
-						"- Switching sides: If you swap the expressions on either side of the inequality, the inequality sign must be reversed to maintain the correct relationship.\n" +
-						"- Applying a decreasing function: When applying a function that is strictly decreasing (e.g., taking the logarithm of both sides in some cases), the inequality sign must be reversed." +
-						"```",
+					Role:    openai.ChatMessageRoleSystem,
+					Content: prompt,
 				},
 				{
 					Role:    openai.ChatMessageRoleUser,
@@ -187,10 +172,12 @@ func (s *OpenAICardCreator) Create(ctx context.Context, deckName string, text st
 										Type: jsonschema.Object,
 										Properties: map[string]jsonschema.Definition{
 											"front": {
-												Type: jsonschema.String,
+												Type:        jsonschema.String,
+												Description: "The front side of the card. Example: 'What is the capital of France?'",
 											},
 											"back": {
-												Type: jsonschema.String,
+												Type:        jsonschema.String,
+												Description: "The back side of the card. Example: 'Paris'",
 											},
 										},
 										AdditionalProperties: false,
@@ -231,8 +218,13 @@ type createAnkiCardsData struct {
 }
 
 // isValidOpenAIModelName checks if the given model name is valid. Needs to be updated when new models are released.
+// nolint:gocyclo
 func isValidOpenAIModelName(name string) bool {
 	switch name {
+	case string(GPTo1Mini0912):
+	case string(GPTo1Mini):
+	case string(GPTo1Preview0912):
+	case string(GPTo1Preview):
 	case string(GPT432K0613):
 	case string(GPT432K0314):
 	case string(GPT432K):
@@ -241,6 +233,7 @@ func isValidOpenAIModelName(name string) bool {
 	case string(GPT4o):
 	case string(GPT4o20240513):
 	case string(GPT4o20240806):
+	case string(GPT4o20241120):
 	case string(GPT4oMini):
 	case string(GPT4oMini20240718):
 	case string(GPT4Turbo):
@@ -274,6 +267,10 @@ func isValidOpenAIModelName(name string) bool {
 type OpenAIModelName string
 
 const (
+	GPTo1Mini0912         OpenAIModelName = "o1-mini-2024-09-12"
+	GPTo1Mini             OpenAIModelName = "o1-mini"
+	GPTo1Preview0912      OpenAIModelName = "o1-preview-2024-09-12"
+	GPTo1Preview          OpenAIModelName = "o1-preview"
 	GPT432K0613           OpenAIModelName = "gpt-4-32k-0613"
 	GPT432K0314           OpenAIModelName = "gpt-4-32k-0314"
 	GPT432K               OpenAIModelName = "gpt-4-32k"
@@ -282,6 +279,7 @@ const (
 	GPT4o                 OpenAIModelName = "gpt-4o"
 	GPT4o20240513         OpenAIModelName = "gpt-4o-2024-05-13"
 	GPT4o20240806         OpenAIModelName = "gpt-4o-2024-08-06"
+	GPT4o20241120         OpenAIModelName = "gpt-4o-2024-11-20"
 	GPT4oMini             OpenAIModelName = "gpt-4o-mini"
 	GPT4oMini20240718     OpenAIModelName = "gpt-4o-mini-2024-07-18"
 	GPT4Turbo             OpenAIModelName = "gpt-4-turbo"

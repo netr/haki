@@ -7,7 +7,7 @@ import (
 )
 
 func Test_NewAICardCreator_OpenAI_DefaultModel(t *testing.T) {
-	o, err := ai.NewAICardCreator(ai.OpenAI, "key")
+	o, err := ai.NewCardCreator(ai.OpenAI, "key")
 	if err != nil || o == nil {
 		t.Fatal("openai model provider is nil")
 	}

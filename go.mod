@@ -3,7 +3,7 @@ module github.com/netr/haki
 go 1.23
 
 require (
-	github.com/joho/godotenv v1.5.1
+	github.com/google/uuid v1.6.0
 	github.com/lmittmann/tint v1.0.5
 	github.com/sashabaranov/go-openai v1.28.2
 	github.com/urfave/cli/v2 v2.27.4

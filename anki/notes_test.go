@@ -87,7 +87,7 @@ func TestWithVideo(t *testing.T) {
 
 func TestWithPicture(t *testing.T) {
 	builder := anki.NewNoteBuilder("TestDeck", "BasicModel", map[string]interface{}{"Front": "Front Content", "Back": "Back Content"}).
-		WithPicture("http://example.com/image.jpg", "image.jpg", "Front", "Back")
+		WithPicture("http://example.com/image.jpg", "image.jpg", "image.jpg", "Front", "Back")
 	note := builder.Build()
 
 	if len(note.Picture) != 1 {
@@ -130,7 +130,7 @@ func TestMultipleMediaAdditions(t *testing.T) {
 		WithAudio("http://example.com/audio1.mp3", "audio1.mp3", "Back").
 		WithAudio("http://example.com/audio2.mp3", "audio2.mp3", "Front").
 		WithVideo("http://example.com/video1.mp4", "video1.mp4", "Front").
-		WithPicture("http://example.com/image1.jpg", "image1.jpg", "Back")
+		WithPicture("http://example.com/image1.jpg", "", "image1.jpg", "Back")
 	note := builder.Build()
 
 	if len(note.Audio) != 2 {

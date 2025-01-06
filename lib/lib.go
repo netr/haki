@@ -1,37 +1,51 @@
 package lib
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 )
 
 // SaveFile saves data to a file
 func SaveFile(fileName string, data []byte) error {
-	f, err := os.Create(fileName)
+	fd, err := os.Create(fileName)
 	if err != nil {
-		return fmt.Errorf("create file: %w", err)
+		return err
 	}
-	defer f.Close()
+	defer func() { _ = fd.Close() }()
 
-	_, err = f.Write(data)
+	_, err = fd.Write(data)
 	if err != nil {
-		return fmt.Errorf("write file: %w", err)
+		return err
 	}
 	return nil
 }
 
-// validateOutputPath validates the output path to ensure it is a valid file path and writable.
+// FileExists checks if a file exists at the given path.
+func FileExists(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil
+}
+
+type OutputPathError struct {
+	Err string
+}
+
+func (e *OutputPathError) Error() string {
+	return e.Err
+}
+
+// ValidateOutputPath validates the output path to ensure it is a valid file path and writable.
 func ValidateOutputPath(output string) error {
 	if output == "" {
-		return errors.New("output path is empty")
+		return &OutputPathError{"output path is empty"}
 	}
 
 	// Check if the path is a directory
 	info, err := os.Stat(output)
 	if err == nil && info.IsDir() {
-		return errors.New("output path is a directory")
+		return &OutputPathError{"output path is a directory"}
 	}
 
 	// Check if the directory exists and is writable
@@ -41,11 +55,33 @@ func ValidateOutputPath(output string) error {
 	}
 
 	// Check if the file is writable
-	file, err := os.OpenFile(output, os.O_WRONLY|os.O_CREATE, 0644)
+	fd, err := os.OpenFile(output, os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
 		return fmt.Errorf("cannot write to output file: %w", err)
 	}
-	file.Close()
+	defer func() { _ = fd.Close() }()
 
 	return nil
+}
+
+// GetEnv returns the value of an environment variable or a default value if the environment variable is not set.
+func GetEnv(key string, defaultValue string) string {
+	value := os.Getenv(key)
+	if value == "" {
+		return defaultValue
+	}
+	return value
+}
+
+// GetEnvInt returns the value of an environment variable as an integer or a default value if the environment variable is not set or is not a valid integer.
+func GetEnvInt(key string, defaultValue int) int {
+	value := os.Getenv(key)
+	if value == "" {
+		return defaultValue
+	}
+	ivalue, err := strconv.Atoi(value)
+	if err != nil {
+		return defaultValue
+	}
+	return ivalue
 }

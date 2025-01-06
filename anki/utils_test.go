@@ -1,12 +1,13 @@
 package anki_test
 
 import (
+	"slices"
 	"testing"
 
 	"github.com/netr/haki/anki"
 )
 
-func Test_RemoveParentDecks(t *testing.T) {
+func Test_FilterDecksByHierarchy(t *testing.T) {
 	t.Parallel()
 
 	test := []struct {
@@ -15,19 +16,29 @@ func Test_RemoveParentDecks(t *testing.T) {
 		expected  []string
 	}{
 		{
-			name:      "all parent decks removed, return empty slice",
+			name:      "all solo decks",
 			deckNames: anki.DeckNames{"deck1", "deck2", "deck3"},
-			expected:  []string{},
+			expected:  []string{"deck3", "deck2", "deck1"},
+		},
+		{
+			name:      "parent deck should be removed and only show child",
+			deckNames: anki.DeckNames{"deck1", "deck1::test"},
+			expected:  []string{"deck1::test"},
 		},
 		{
 			name:      "some parent decks removed, return slice with parent decks",
 			deckNames: anki.DeckNames{"deck1", "deck2::subdeck", "deck3::subdeck::subsubdeck"},
-			expected:  []string{"deck2::subdeck", "deck3::subdeck::subsubdeck"},
+			expected:  []string{"deck2::subdeck", "deck3::subdeck::subsubdeck", "deck1"},
 		},
 		{
-			name:      "no parent decks removed, return slice with all decks",
-			deckNames: anki.DeckNames{"deck1::subdeck", "deck2::subdeck", "deck3::subdeck"},
+			name:      "all parent decks removed, return slice with all decks",
+			deckNames: anki.DeckNames{"deck1", "deck1::subdeck", "deck2", "deck2::subdeck", "deck3", "deck3::subdeck"},
 			expected:  []string{"deck1::subdeck", "deck2::subdeck", "deck3::subdeck"},
+		},
+		{
+			name:      "re-arranged decks still work properly",
+			deckNames: anki.DeckNames{"deck1", "deck2::subdeck", "deck2", "deck1::subdeck"},
+			expected:  []string{"deck1::subdeck", "deck2::subdeck"},
 		},
 	}
 
@@ -36,14 +47,14 @@ func Test_RemoveParentDecks(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			actual := anki.RemoveParentDecks(tc.deckNames)
+			actual := anki.FilterDecksByHierarchy(tc.deckNames)
 			if len(actual) != len(tc.expected) {
 				t.Errorf("expected %d decks, got %d", len(tc.expected), len(actual))
 			}
 
-			for i, deck := range actual {
-				if deck != tc.expected[i] {
-					t.Errorf("expected deck %s, got %s", tc.expected[i], deck)
+			for _, deck := range actual {
+				if !slices.Contains(tc.expected, deck) {
+					t.Errorf("expected deck: %s", deck)
 				}
 			}
 		})
