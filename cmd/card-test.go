@@ -16,7 +16,7 @@ func NewCardTestCommand(apiKey string) *cli.Command {
 		Name:      "cardtest",
 		Usage:     "Test creating a card for the specified word.",
 		ArgsUsage: "--word <word>",
-		Flags:     []cli.Flag{newWordFlag()},
+		Flags:     []cli.Flag{newWordsFlag()},
 		Action:    actionCardTest(apiKey),
 		Aliases:   []string{"test"},
 	}

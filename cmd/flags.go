@@ -4,13 +4,13 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-func newWordFlag() *cli.StringFlag {
+func newWordsFlag() *cli.StringFlag {
 	return &cli.StringFlag{
-		Name:     "word",
+		Name:     "words",
 		Aliases:  []string{"w"},
 		Value:    "",
 		Required: true,
-		Usage:    "word to create a card for",
+		Usage:    "words to create a card for (comma separated)",
 	}
 }
 

@@ -15,9 +15,9 @@ func NewVocabCommand(apiKey, outputDir string) *cli.Command {
 	return &cli.Command{
 		Name:      "vocab",
 		Usage:     "Create a vocabulary Anki card using the specified word.",
-		ArgsUsage: "--word <word> --service <service> --model <model> --debug",
+		ArgsUsage: "--words <word,word> --service <service> --model <model> --debug",
 		Flags: []cli.Flag{
-			newWordFlag(),
+			newWordsFlag(),
 			newServiceFlag(),
 			newModelFlag(),
 			newDebugFlag(),
@@ -27,7 +27,7 @@ func NewVocabCommand(apiKey, outputDir string) *cli.Command {
 				apiKey,
 				"vocab",
 				outputDir,
-				[]string{"word", "service", "model", "debug"},
+				[]string{"words", "service", "model", "debug"},
 			)),
 	}
 }
@@ -52,11 +52,20 @@ func (a VocabAction) Run(args ...interface{}) error {
 	if len(args) < 1 {
 		return fmt.Errorf("action run: %w", ErrQueryRequired)
 	}
-	word := args[0].(string)
-	if word == "" {
+	words := args[0].(string)
+	if words == "" {
 		return ErrWordFlagRequired
 	}
 
+	for _, word := range a.splitWords(words) {
+		if err := runVocab(a.apiKey, word, a.outputDir); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (a VocabAction) splitWords(word string) []string {
 	words := []string{word}
 	if strings.Contains(word, ",") {
 		words = strings.Split(word, ",")
@@ -64,13 +73,7 @@ func (a VocabAction) Run(args ...interface{}) error {
 			words[i] = strings.TrimSpace(w)
 		}
 	}
-
-	for _, word := range words {
-		if err := runVocab(a.apiKey, word, a.outputDir); err != nil {
-			return err
-		}
-	}
-	return nil
+	return words
 }
 
 func runVocab(apiKey, word, outputDir string) error {

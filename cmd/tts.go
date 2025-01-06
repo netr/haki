@@ -18,7 +18,7 @@ func NewTTSCommand(apiKey, hakiDir string) *cli.Command {
 		Name:      "tts",
 		Usage:     "Create a text-to-speech audio file for the specified word.",
 		ArgsUsage: "--word <word> [--out <output file>]",
-		Flags:     []cli.Flag{newWordFlag(), newOutFlag()},
+		Flags:     []cli.Flag{newWordsFlag(), newOutFlag()},
 		Action:    actionTTS(apiKey, hakiDir),
 	}
 }
