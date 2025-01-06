@@ -76,7 +76,7 @@ func (a VocabAction) splitWords(w string) []string {
 	return words
 }
 
-func runVocab(apiKey, word, outputDir string) error {
+func runVocab(apiKey, query, outputDir string) error {
 	cardCreator, err := ai.NewCardCreator(ai.OpenAI, apiKey)
 	if err != nil {
 		return fmt.Errorf("new openai api provider: %w", err)
@@ -88,12 +88,12 @@ func runVocab(apiKey, word, outputDir string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
-	deckName, err := plugin.ChooseDeck(ctx, word)
+	deckName, err := plugin.ChooseDeck(ctx, query)
 	if err != nil {
 		return fmt.Errorf("run vocab: %w", err)
 	}
 
-	cards, err := plugin.GenerateAnkiCards(ctx, word)
+	cards, err := plugin.GenerateAnkiCards(ctx, query)
 	if err != nil {
 		return fmt.Errorf("run vocab: %w", err)
 	}

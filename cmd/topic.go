@@ -86,7 +86,7 @@ func (a TopicAction) Run(args ...interface{}) error {
 // runTopic creates an anki client, card creator and builds the anki card.
 // doesn't need to be part of the action topic struct because the problem terminates after finishing.
 // if we make this a long running program, we should put this in the struct and hold references to the client/creator.
-func runTopic(apiKey, word, model string, skipSave bool) error {
+func runTopic(apiKey, query, model string, skipSave bool) error {
 	cardCreator, err := ai.NewCardCreator(ai.OpenAI, apiKey, ai.OpenAIModelName(model))
 	if err != nil {
 		return fmt.Errorf("new openai card creator (%s): %w", model, err)
@@ -96,12 +96,12 @@ func runTopic(apiKey, word, model string, skipSave bool) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
-	deckName, err := plugin.ChooseDeck(ctx, word)
+	deckName, err := plugin.ChooseDeck(ctx, query)
 	if err != nil {
 		return fmt.Errorf("run topic: %w", err)
 	}
 
-	cards, err := plugin.GenerateAnkiCards(ctx, word)
+	cards, err := plugin.GenerateAnkiCards(ctx, query)
 	if err != nil {
 		return fmt.Errorf("run topic: %w", err)
 	}
