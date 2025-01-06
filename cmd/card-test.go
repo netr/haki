@@ -46,7 +46,7 @@ func runCardTest(apiKey, word string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	ans, err := cardCreator.Create(ctx, "test", word, "prompt")
+	ans, err := cardCreator.GenerateAnkiCards(ctx, "test", word, "prompt")
 	if err != nil {
 		return fmt.Errorf("create card: %w", err)
 	}

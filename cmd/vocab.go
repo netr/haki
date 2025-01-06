@@ -14,7 +14,7 @@ import (
 func NewVocabCommand(apiKey, outputDir string) *cli.Command {
 	return &cli.Command{
 		Name:      "vocab",
-		Usage:     "Create a vocabulary Anki card using the specified word.",
+		Usage:     "GenerateAnkiCards a vocabulary Anki card using the specified word.",
 		ArgsUsage: "--words <word,word> --service <service> --model <model> --debug",
 		Flags: []cli.Flag{
 			newWordsFlag(),
@@ -65,10 +65,10 @@ func (a VocabAction) Run(args ...interface{}) error {
 	return nil
 }
 
-func (a VocabAction) splitWords(word string) []string {
-	words := []string{word}
-	if strings.Contains(word, ",") {
-		words = strings.Split(word, ",")
+func (a VocabAction) splitWords(w string) []string {
+	words := []string{w}
+	if strings.Contains(w, ",") {
+		words = strings.Split(w, ",")
 		for i, w := range words {
 			words[i] = strings.TrimSpace(w)
 		}
@@ -83,13 +83,25 @@ func runVocab(apiKey, word, outputDir string) error {
 	}
 	ttsService := ai.NewTTSService(apiKey)
 	imageGenService := ai.NewImageGenService(apiKey)
-	vocabEntity := newVocabEntity(cardCreator, ttsService, imageGenService, outputDir)
+	plugin := newVocabPlugin(cardCreator, ttsService, imageGenService, outputDir)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
-	if err := vocabEntity.CreateCards(ctx, word, generateAnkiCardPrompt(), false); err != nil {
-		return fmt.Errorf("create vocab cards: %w", err)
+
+	deckName, err := plugin.ChooseDeck(ctx, "Vocabulary", word)
+	if err != nil {
+		return fmt.Errorf("choose deck: %w", err)
 	}
 
+	cards, err := plugin.GenerateAnkiCards(ctx, word, generateAnkiCardPrompt())
+	if err != nil {
+		return fmt.Errorf("create topic ankiCards: %w", err)
+	}
+
+	if err := plugin.StoreAnkiCards(deckName, cards); err != nil {
+		return fmt.Errorf("create anki ankiCards: %w", err)
+	}
+
+	PrintCards(cards, true)
 	return nil
 }
