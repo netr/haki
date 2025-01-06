@@ -88,12 +88,12 @@ func runVocab(apiKey, word, outputDir string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
-	deckName, err := plugin.ChooseDeck(ctx, "Vocabulary", word)
+	deckName, err := plugin.ChooseDeck(ctx, word)
 	if err != nil {
 		return fmt.Errorf("choose deck: %w", err)
 	}
 
-	cards, err := plugin.GenerateAnkiCards(ctx, word, generateAnkiCardPrompt())
+	cards, err := plugin.GenerateAnkiCards(ctx, word)
 	if err != nil {
 		return fmt.Errorf("create topic ankiCards: %w", err)
 	}

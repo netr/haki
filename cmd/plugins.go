@@ -15,9 +15,9 @@ import (
 )
 
 type AnkiCardGeneratorPlugin interface {
-	GenerateAnkiCards(ctx context.Context, query string, prompt string) ([]ai.AnkiCard, error)
+	GenerateAnkiCards(ctx context.Context, query string) ([]ai.AnkiCard, error)
 	StoreAnkiCards(deckName string, cards []ai.AnkiCard) error
-	ChooseDeck(ctx context.Context, deckFilter string, query string) (string, error)
+	ChooseDeck(ctx context.Context, query string) (string, error)
 }
 
 type BasePlugin struct {
@@ -37,7 +37,7 @@ func NewBasePlugin(c ai.AnkiController) *BasePlugin {
 func (t *BasePlugin) getFilteredDeckNames(filter ...string) ([]string, error) {
 	deckNames, err := t.listBaseDeckNames()
 	if err != nil {
-		return nil, fmt.Errorf("get deck names: %w", err)
+		return nil, fmt.Errorf("get filtered deck names: %w", err)
 	}
 
 	decks, err := t.filterDecksByName(deckNames, filter...)
@@ -52,7 +52,7 @@ func (t *BasePlugin) getFilteredDeckNames(filter ...string) ([]string, error) {
 func (t *BasePlugin) listBaseDeckNames() ([]string, error) {
 	deckNames, err := t.ankiClient.DeckNames().GetNames()
 	if err != nil {
-		return nil, fmt.Errorf("get deck names: %w", err)
+		return nil, fmt.Errorf("list base deck names: %w", err)
 	}
 	return anki.FilterDecksByHierarchy(deckNames), nil
 }
@@ -80,7 +80,7 @@ func (t *BasePlugin) generateAnkiCards(ctx context.Context, query string, prompt
 		prompt,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("create anki ankiCards: %w", err)
+		return nil, fmt.Errorf("generate anki cards: %w", err)
 	}
 	return cards, nil
 }
@@ -94,7 +94,7 @@ func (t *BasePlugin) chooseDeck(ctx context.Context, query string, decks []strin
 	if createIfNotExists {
 		if !slices.Contains(decks, deckName) {
 			if err := t.ankiClient.DeckNames().Create(deckName); err != nil {
-				return "", fmt.Errorf("create deck (%s): %w", deckName, err)
+				return "", fmt.Errorf("choose deck (%s): %w", deckName, err)
 			}
 		}
 	}
@@ -103,7 +103,7 @@ func (t *BasePlugin) chooseDeck(ctx context.Context, query string, decks []strin
 	return deckName, nil
 }
 
-func (t *BasePlugin) ChooseDeck(ctx context.Context, deckFilter string, query string) (string, error) {
+func (t *BasePlugin) chooseFilteredDeck(ctx context.Context, deckFilter string, query string) (string, error) {
 	if query == "" {
 		return "", ErrQueryRequired
 	}
@@ -117,7 +117,7 @@ func (t *BasePlugin) ChooseDeck(ctx context.Context, deckFilter string, query st
 	// It's a single shot program currently, so this should be adequate enough error handling and reporting.
 	deckName, err := t.chooseDeck(ctx, query, decks, true)
 	if err != nil {
-		return "", fmt.Errorf("choose deck: %w", err)
+		return "", fmt.Errorf("choose filtered deck: %w", err)
 	}
 
 	return deckName, nil
@@ -154,10 +154,14 @@ func newTopicPlugin(c ai.AnkiController) AnkiCardGeneratorPlugin {
 	return t
 }
 
-func (t *TopicPlugin) GenerateAnkiCards(ctx context.Context, query string, prompt string) ([]ai.AnkiCard, error) {
-	cards, err := t.generateAnkiCards(ctx, query, prompt)
+func (t *TopicPlugin) ChooseDeck(ctx context.Context, query string) (string, error) {
+	return t.BasePlugin.chooseFilteredDeck(ctx, "Haki", query)
+}
+
+func (t *TopicPlugin) GenerateAnkiCards(ctx context.Context, query string) ([]ai.AnkiCard, error) {
+	cards, err := t.generateAnkiCards(ctx, query, generateAnkiCardPrompt())
 	if err != nil {
-		return nil, fmt.Errorf("create anki ankiCards: %w", err)
+		return nil, fmt.Errorf("topic: %w", err)
 	}
 	slog.Info("anki card(s) generated", slog.Int("count", len(cards)))
 
@@ -176,7 +180,7 @@ func (t *TopicPlugin) StoreAnkiCards(deckName string, cards []ai.AnkiCard) error
 
 		id, err := t.ankiClient.Notes().Add(note)
 		if err != nil {
-			return fmt.Errorf("add note: %w", err)
+			return fmt.Errorf("topic: %w", err)
 		}
 		slog.Info(
 			"note added",
@@ -216,21 +220,25 @@ func newVocabPlugin(cardCreator ai.AnkiController, ttsService ai.TTS, imageGenSe
 	return e
 }
 
-func (v *VocabPlugin) GenerateAnkiCards(ctx context.Context, query string, prompt string) ([]ai.AnkiCard, error) {
-	cards, err := v.generateAnkiCards(ctx, query, prompt)
+func (v *VocabPlugin) ChooseDeck(ctx context.Context, query string) (string, error) {
+	return v.BasePlugin.chooseFilteredDeck(ctx, "Vocabulary", query)
+}
+
+func (v *VocabPlugin) GenerateAnkiCards(ctx context.Context, query string) ([]ai.AnkiCard, error) {
+	cards, err := v.generateAnkiCards(ctx, query, generateAnkiCardPrompt())
 	if err != nil {
-		return nil, fmt.Errorf("create anki ankiCards: %w", err)
+		return nil, fmt.Errorf("vocab: %w", err)
 	}
 	slog.Info("anki card(s) created", slog.Int("count", len(v.ankiCards)))
 
 	if _, err := v.generateTTS(ctx, query); err != nil {
-		slog.Error("create tts", slog.String("error", err.Error()))
+		slog.Error("vocab: create tts", slog.String("error", err.Error()))
 	} else {
 		slog.Info("tts created", slog.String("file_path", v.ttsFilePath))
 	}
 
 	if _, err := v.generateImage(ctx, query); err != nil {
-		slog.Error("create image", slog.String("error", err.Error()))
+		slog.Error("vocab: create image", slog.String("error", err.Error()))
 	} else {
 		slog.Info("image created", slog.String("file_path", v.imageFilePath))
 	}
@@ -254,7 +262,7 @@ func (v *VocabPlugin) StoreAnkiCards(deckName string, cards []ai.AnkiCard) error
 
 		id, err := v.ankiClient.Notes().Add(note)
 		if err != nil {
-			return fmt.Errorf("add vocab note: %w", err)
+			return fmt.Errorf("vocab: %w", err)
 		}
 		slog.Info(
 			"note added",

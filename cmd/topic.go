@@ -96,19 +96,19 @@ func runTopic(apiKey, word, model string, skipSave bool) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
-	deckName, err := plugin.ChooseDeck(ctx, "Haki", word)
+	deckName, err := plugin.ChooseDeck(ctx, word)
 	if err != nil {
-		return fmt.Errorf("choose deck: %w", err)
+		return fmt.Errorf("plugin: %w", err)
 	}
 
-	cards, err := plugin.GenerateAnkiCards(ctx, word, generateAnkiCardPrompt())
+	cards, err := plugin.GenerateAnkiCards(ctx, word)
 	if err != nil {
-		return fmt.Errorf("create topic ankiCards: %w", err)
+		return fmt.Errorf("plugin: %w", err)
 	}
 
 	if !skipSave {
 		if err := plugin.StoreAnkiCards(deckName, cards); err != nil {
-			return fmt.Errorf("create anki ankiCards: %w", err)
+			return fmt.Errorf("plugin: %w", err)
 		}
 	}
 
