@@ -16,7 +16,7 @@ import (
 func NewImageCommand(apiKey, outputDir string) *cli.Command {
 	return &cli.Command{
 		Name:      "image",
-		Usage:     "Create an image for the specified text.",
+		Usage:     "GenerateAnkiCards an image for the specified text.",
 		ArgsUsage: "--prompt <prompt>",
 		Flags: []cli.Flag{
 			newPromptFlag(),

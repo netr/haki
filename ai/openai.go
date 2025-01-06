@@ -49,7 +49,7 @@ func (api *OpenAIClient) createChatCompletion(ctx context.Context, request opena
 	return api.client.CreateChatCompletion(ctx, request)
 }
 
-// OpenAICardCreator is an implementation of the CardCreator interface for OpenAI.
+// OpenAICardCreator is an implementation of the AnkiController interface for OpenAI.
 type OpenAICardCreator struct {
 	client *OpenAIClient
 }
@@ -139,7 +139,7 @@ func (s *OpenAICardCreator) ChooseDeck(ctx context.Context, deckNames []string, 
 }
 
 // Create uses the OpenAI API to generate AnkiCard's (front and back) for the given deck and text.
-func (s *OpenAICardCreator) Create(ctx context.Context, deckName string, text string, prompt string) ([]AnkiCard, error) {
+func (s *OpenAICardCreator) GenerateAnkiCards(ctx context.Context, deckName string, text string, prompt string) ([]AnkiCard, error) {
 
 	resp, err := s.client.createChatCompletion(
 		ctx,
