@@ -108,14 +108,16 @@ func (v *VocabularyEntity) Create(ctx context.Context, word string) error {
 	slog.Info("anki card(s) created", slog.Int("count", len(v.cards)))
 
 	if err := v.createTTS(ctx); err != nil {
-		return fmt.Errorf("create tts: %w", err)
+		slog.Error("create tts", slog.String("error", err.Error()))
+	} else {
+		slog.Info("tts created", slog.String("file_path", v.ttsFilePath))
 	}
-	slog.Info("tts created", slog.String("file_path", v.ttsFilePath))
 
 	if err := v.createImage(ctx); err != nil {
-		return fmt.Errorf("create image: %w", err)
+		slog.Error("create image", slog.String("error", err.Error()))
+	} else {
+		slog.Info("image created", slog.String("file_path", v.imageFilePath))
 	}
-	slog.Info("image created", slog.String("file_path", v.imageFilePath))
 
 	// TODO: FIXME: make sure this model is created before using the app. Preferably something like "Haki::VocabularyWithAudio"
 	const modelName = "VocabularyWithAudio"
@@ -123,25 +125,38 @@ func (v *VocabularyEntity) Create(ctx context.Context, word string) error {
 		data := map[string]interface{}{
 			"Question":   c.Front,
 			"Definition": formatBack(c.Back),
-			"Audio":      fmt.Sprintf("[sound:%s.mp3]", v.word),
-			"Picture":    fmt.Sprintf("<img src=\"%s\">", fmt.Sprintf("%s.webp", v.word)),
 		}
 
-		note := anki.NewNoteBuilder(v.deckName, modelName, data).
-			WithAudio(
-				v.ttsFilePath,
-				fmt.Sprintf("%s.mp3", v.word),
-				"Front",
-			).
-			WithPicture(
-				"",
-				v.imageFilePath,
-				fmt.Sprintf("%s.webp", v.word),
-				"Front",
-			).
-			Build()
+		note := anki.NewNoteBuilder(v.deckName, modelName, data)
 
-		id, err := v.ankiClient.Notes().Add(note)
+		if v.hasTTS() {
+			note.
+				SetField(
+					"Audio",
+					createAudioTag(makeTTSFileName(v.word)),
+				).
+				WithAudio(
+					v.ttsFilePath,
+					makeTTSFileName(v.word),
+					"Front",
+				)
+		}
+
+		if v.hasImage() {
+			note.
+				SetField(
+					"Picture",
+					createImageTag(makeImageFileName(v.word)),
+				).
+				WithPicture(
+					"",
+					v.imageFilePath,
+					makeImageFileName(v.word),
+					"Front",
+				)
+		}
+
+		id, err := v.ankiClient.Notes().Add(note.Build())
 		if err != nil {
 			return fmt.Errorf("add note: %w", err)
 		}
@@ -160,18 +175,12 @@ func (v *VocabularyEntity) Create(ctx context.Context, word string) error {
 	return nil
 }
 
-func replaceBold(text string) string {
-	re := regexp.MustCompile(`\*\*(.*?)\*\*`)
-	return re.ReplaceAllString(text, `<b>$1</b>`)
+func (v *VocabularyEntity) hasImage() bool {
+	return strings.TrimSpace(v.imageFilePath) != ""
 }
 
-func formatBack(data string) string {
-	if !strings.Contains(strings.ToLower(data), "<") {
-		data = strings.ReplaceAll(data, "\n", "<br>\n")
-	}
-	data = strings.ReplaceAll(data, "\\<", "<")
-	data = replaceBold(data)
-	return data
+func (v *VocabularyEntity) hasTTS() bool {
+	return strings.TrimSpace(v.ttsFilePath) != ""
 }
 
 func (v *VocabularyEntity) createTTS(ctx context.Context) error {
@@ -271,4 +280,40 @@ func (v *VocabularyEntity) getVocabDecks(filter ...string) ([]string, error) {
 		}
 	}
 	return decks, nil
+}
+
+func replaceBold(text string) string {
+	re := regexp.MustCompile(`\*\*(.*?)\*\*`)
+	return re.ReplaceAllString(text, `<b>$1</b>`)
+}
+
+func formatBack(data string) string {
+	if !strings.Contains(strings.ToLower(data), "<") {
+		data = strings.ReplaceAll(data, "\n", "<br>\n")
+	}
+	data = strings.ReplaceAll(data, "\\<", "<")
+	data = replaceBold(data)
+	return data
+}
+
+func createImageTag(fileName string) string {
+	return fmt.Sprintf("<img src=\"%s\">", fileName)
+}
+
+func createAudioTag(fileName string) string {
+	return fmt.Sprintf("[sound:%s]", fileName)
+}
+
+func makeImageFileName(name string) string {
+	if strings.HasSuffix(name, ".webp") {
+		return name
+	}
+	return fmt.Sprintf("%s.webp", name)
+}
+
+func makeTTSFileName(name string) string {
+	if strings.HasSuffix(name, ".mp3") {
+		return name
+	}
+	return fmt.Sprintf("%s.mp3", name)
 }

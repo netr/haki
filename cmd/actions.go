@@ -76,7 +76,7 @@ func generateAnkiCardPrompt() string {
     </Document>
     <Document>
       <Front>What is a watershed moment? (noun)</Front>
-      <Back>Zozobra is a feeling of anxiety or unease; the sensation that things are not as they should be or are on the brink of catastrophic failure.<br><br><b>Example:</b> The constant updates of breaking news left her with a sense of zozobra, as she couldn't shake the feeling of impending doom.</Back>
+      <Back>Feeling of anxiety or unease; the sensation that things are not as they should be or are on the brink of catastrophic failure.<br><br><b>Example:</b> The constant updates of breaking news left her with a sense of zozobra, as she couldn't shake the feeling of impending doom.</Back>
     </Document>
     <Document>
       <Front>What is a watershed moment? (noun)</Front>

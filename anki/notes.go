@@ -128,6 +128,12 @@ func (nb *NoteBuilder) WithPicture(url, path, filename string, fields ...string)
 	return nb
 }
 
+// SetField appends a field to the note
+func (nb *NoteBuilder) SetField(name string, value interface{}) *NoteBuilder {
+	nb.note.Fields[name] = value
+	return nb
+}
+
 // AllowDuplicate sets whether to allow duplicate notes
 func (nb *NoteBuilder) AllowDuplicate(allow bool) *NoteBuilder {
 	nb.note.Options.AllowDuplicate = allow
