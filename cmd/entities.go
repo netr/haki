@@ -267,33 +267,29 @@ func (v *VocabEntity) CreateCards(ctx context.Context, query string, prompt stri
 	}
 
 	if !skipSave {
-		if err := v.saveCardsToAnki(); err != nil {
-			return fmt.Errorf("create anki cards: %w", err)
-		}
-	}
+		const modelName = "VocabularyWithAudio"
+		for _, c := range v.cards {
+			note, err := v.createNote(modelName, c)
+			if err != nil {
+				slog.Error("failed adding note",
+					slog.String("deck", v.deckName),
+					slog.String("model", modelName),
+					slog.String("error", err.Error()),
+				)
+				continue
+			}
 
-	const modelName = "VocabularyWithAudio"
-	for _, c := range v.cards {
-		note, err := v.createNote(modelName, c)
-		if err != nil {
-			slog.Error("failed adding note",
+			id, err := v.ankiClient.Notes().Add(note)
+			if err != nil {
+				return fmt.Errorf("add vocab note: %w", err)
+			}
+			slog.Info(
+				"note added",
 				slog.String("deck", v.deckName),
 				slog.String("model", modelName),
-				slog.String("error", err.Error()),
+				slog.String("id", fmt.Sprintf("%.f", id)),
 			)
-			continue
 		}
-
-		id, err := v.ankiClient.Notes().Add(note)
-		if err != nil {
-			return fmt.Errorf("add vocab note: %w", err)
-		}
-		slog.Info(
-			"note added",
-			slog.String("deck", v.deckName),
-			slog.String("model", modelName),
-			slog.String("id", fmt.Sprintf("%.f", id)),
-		)
 	}
 
 	v.PrintCards(true)
