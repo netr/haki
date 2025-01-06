@@ -1,10 +1,19 @@
 package cmd
 
 import (
+	"fmt"
 	"log/slog"
 
 	"github.com/urfave/cli/v2"
 )
+
+type ErrFlagValueMissing struct {
+	Flag string
+}
+
+func (e *ErrFlagValueMissing) Error() string {
+	return fmt.Sprintf("flag '%s' is missing data", e.Flag)
+}
 
 type ActionCallbackFunc func() error
 
@@ -75,12 +84,12 @@ func generateAnkiCardPrompt() string {
       <Back>The slope is <anki-mathjax>-{A \\over B}</anki-mathjax></Back>
     </Document>
     <Document>
-      <Front>What is a watershed moment? (noun)</Front>
+      <Front>What is Zozobra? (noun)</Front>
       <Back>Feeling of anxiety or unease; the sensation that things are not as they should be or are on the brink of catastrophic failure.<br><br><b>Example:</b> The constant updates of breaking news left her with a sense of zozobra, as she couldn't shake the feeling of impending doom.</Back>
     </Document>
     <Document>
       <Front>What is a watershed moment? (noun)</Front>
-      <Back>A watershed moment is a critical turning point that signifies a major shift or change in direction. It's an event that causes significant and often transformative change, shaping the course of events thereafter.<br><b>Examples:</b><br>- The invention of the internet was a watershed moment in technology and communication.<br>- The fall of the Berlin Wall marked a watershed moment in world history, symbolizing the end of the Cold War.<br><br><b>Metaphor:</b> Just as a watershed in geography is the line dividing waters flowing to different rivers or seas, a watershed moment in life represents a division between what came before and what follows.</Back>
+      <Back>A critical turning point that signifies a major shift or change in direction. It's an event that causes significant and often transformative change, shaping the course of events thereafter.<br><b>Examples:</b><br>- The invention of the internet was a watershed moment in technology and communication.<br>- The fall of the Berlin Wall marked a watershed moment in world history, symbolizing the end of the Cold War.<br><br><b>Metaphor:</b> Just as a watershed in geography is the line dividing waters flowing to different rivers or seas, a watershed moment in life represents a division between what came before and what follows.</Back>
     </Document>
     <Document>
       <Front>What are the four most common reasons an inequality sign must be reversed?</Front>
