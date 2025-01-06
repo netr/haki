@@ -90,16 +90,16 @@ func runVocab(apiKey, word, outputDir string) error {
 
 	deckName, err := plugin.ChooseDeck(ctx, word)
 	if err != nil {
-		return fmt.Errorf("choose deck: %w", err)
+		return fmt.Errorf("run vocab: %w", err)
 	}
 
 	cards, err := plugin.GenerateAnkiCards(ctx, word)
 	if err != nil {
-		return fmt.Errorf("create topic ankiCards: %w", err)
+		return fmt.Errorf("run vocab: %w", err)
 	}
 
 	if err := plugin.StoreAnkiCards(deckName, cards); err != nil {
-		return fmt.Errorf("create anki ankiCards: %w", err)
+		return fmt.Errorf("run vocab: %w", err)
 	}
 
 	PrintCards(cards, true)

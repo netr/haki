@@ -98,17 +98,17 @@ func runTopic(apiKey, word, model string, skipSave bool) error {
 
 	deckName, err := plugin.ChooseDeck(ctx, word)
 	if err != nil {
-		return fmt.Errorf("plugin: %w", err)
+		return fmt.Errorf("run topic: %w", err)
 	}
 
 	cards, err := plugin.GenerateAnkiCards(ctx, word)
 	if err != nil {
-		return fmt.Errorf("plugin: %w", err)
+		return fmt.Errorf("run topic: %w", err)
 	}
 
 	if !skipSave {
 		if err := plugin.StoreAnkiCards(deckName, cards); err != nil {
-			return fmt.Errorf("plugin: %w", err)
+			return fmt.Errorf("run topic: %w", err)
 		}
 	}
 

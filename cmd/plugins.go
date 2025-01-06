@@ -196,10 +196,6 @@ func (t *TopicPlugin) StoreAnkiCards(deckName string, cards []ai.AnkiCard) error
 // VocabPlugin
 // ==================================================
 
-var (
-	ErrWordRequired = fmt.Errorf("word is required")
-)
-
 type VocabPlugin struct {
 	*BasePlugin
 	ttsService      ai.TTS
