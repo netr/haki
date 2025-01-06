@@ -79,12 +79,12 @@ func (a *application) registerCommands() *cli.App {
 // setupAppMetadata sets up the app metadata.
 func (a *application) setupAppMetadata() *cli.App {
 	a.app.Name = "haki"
-	a.app.Version = "0.0.1"
+	a.app.Version = "0.1.0"
 	a.app.Usage = "haki is a tool to help you create anki cards using AI and AnkiConnect"
 	a.app.Authors = []*cli.Author{
 		{
 			Name:  "Corey Jackson (netr)",
-			Email: "programmatical@gmail.com",
+			Email: "corey@netr.dev",
 		},
 	}
 	a.app.Compiled = time.Now()

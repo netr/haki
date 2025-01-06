@@ -42,25 +42,17 @@ func newTopicFlag() *cli.StringFlag {
 }
 
 type TopicAction struct {
-	flags  []string
-	apiKey string
-	name   string
+	Action
 }
 
 func NewTopicAction(apiKey, name string, flags []string) *TopicAction {
 	return &TopicAction{
-		flags:  flags,
-		apiKey: apiKey,
-		name:   name,
+		Action{
+			flags:  flags,
+			apiKey: apiKey,
+			name:   name,
+		},
 	}
-}
-
-func (a TopicAction) Flags() []string {
-	return a.flags
-}
-
-func (a TopicAction) Name() string {
-	return a.name
 }
 
 func (a TopicAction) Run(args ...interface{}) error {
@@ -86,7 +78,7 @@ func (a TopicAction) Run(args ...interface{}) error {
 	)
 
 	if err := runTopic(a.apiKey, topic, model, skipSave); err != nil {
-		return fmt.Errorf("action run: %w", err)
+		return err
 	}
 	return nil
 }

@@ -3,7 +3,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"strings"
 	"time"
 
@@ -34,27 +33,19 @@ func NewVocabCommand(apiKey, outputDir string) *cli.Command {
 }
 
 type VocabAction struct {
-	flags     []string
-	apiKey    string
-	name      string
+	Action
 	outputDir string
 }
 
 func NewVocabAction(apiKey, name, outputDir string, flags []string) *VocabAction {
 	return &VocabAction{
-		flags:     flags,
-		apiKey:    apiKey,
-		name:      name,
+		Action: Action{
+			flags:  flags,
+			apiKey: apiKey,
+			name:   name,
+		},
 		outputDir: outputDir,
 	}
-}
-
-func (a VocabAction) Flags() []string {
-	return a.flags
-}
-
-func (a VocabAction) Name() string {
-	return a.name
 }
 
 func (a VocabAction) Run(args ...interface{}) error {
@@ -76,7 +67,6 @@ func (a VocabAction) Run(args ...interface{}) error {
 
 	for _, word := range words {
 		if err := runVocab(a.apiKey, word, a.outputDir); err != nil {
-			slog.Error("run", slog.String("action", "vocab"), slog.String("error", err.Error()))
 			return err
 		}
 	}

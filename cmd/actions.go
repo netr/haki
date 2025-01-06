@@ -57,7 +57,11 @@ func actionFn(a Actioner) func(cCtx *cli.Context) error {
 		}
 
 		if err := a.Run(args...); err != nil {
-			slog.Error("run", slog.String("action", a.Name()), slog.String("error", err.Error()))
+			slog.Error(
+				"run",
+				slog.String("action", a.Name()),
+				slog.String("error", err.Error()),
+			)
 			return err
 		}
 		return nil
