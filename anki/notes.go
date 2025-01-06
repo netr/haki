@@ -28,7 +28,7 @@ type Note struct {
 	DeckName  string                 `json:"deckName"`
 	ModelName string                 `json:"modelName"`
 	Fields    map[string]interface{} `json:"fields"`
-	Options   NoteOptions            `json:"2options"`
+	Options   NoteOptions            `json:"options"`
 	Tags      []string               `json:"tags"`
 	Audio     []NoteMedia            `json:"audio"`
 	Video     []NoteMedia            `json:"video"`
