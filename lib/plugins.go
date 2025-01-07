@@ -70,8 +70,7 @@ type PluginConfig struct {
 }
 
 // NewPluginConfigFrom loads and parses a plugin configuration from the given file path
-func NewPluginConfigFrom(path string) (*PluginConfig, error) {
-	// Read the file
+func NewPluginConfigFrom(outputDir, path string) (*PluginConfig, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("reading plugin config file: %w", err)
@@ -90,6 +89,7 @@ func NewPluginConfigFrom(path string) (*PluginConfig, error) {
 		return nil, fmt.Errorf("validating plugin config: %w", err)
 	}
 
+	config.OutputDir = outputDir
 	return config, nil
 }
 
@@ -131,12 +131,15 @@ func (c *PluginConfig) validate() error {
 	return nil
 }
 
-// GetPromptContent loads the prompt content from the configured path
-func (c *PluginConfig) GetPromptContent() (string, error) {
+// GetPromptContentFrom loads the prompt content from the configured path
+func (c *PluginConfig) GetPromptContentFrom(outputDir string) (string, error) {
 	promptPath := c.Prompt.Path
 	if !filepath.IsAbs(promptPath) {
+		if !strings.HasSuffix(outputDir, "/") {
+			outputDir += "/"
+		}
 		// If the path is relative, resolve it relative to the config file location
-		configDir := filepath.Dir(c.OutputDir) // Using OutputDir as base since we don't have config file path
+		configDir := filepath.Dir(outputDir)
 		promptPath = filepath.Join(configDir, promptPath)
 	}
 
@@ -160,13 +163,6 @@ func (c *PluginConfig) GetFieldMapping() map[string]string {
 var (
 	ErrQueryRequired = fmt.Errorf("query is required")
 )
-
-// AnkiCardGeneratorPlugin is the interface for Anki card generation plugins
-type AnkiCardGeneratorPlugin interface {
-	GenerateAnkiCards(ctx context.Context, query string) ([]ai.AnkiCard, error)
-	StoreAnkiCards(deckName string, cards []ai.AnkiCard) error
-	ChooseDeck(ctx context.Context, query string) (string, error)
-}
 
 // BasePlugin is a base implementation of the AnkiCardGeneratorPlugin interface
 type BasePlugin struct {
@@ -367,6 +363,9 @@ func validateServices(config *PluginConfig, services []PluginService) error {
 	// Create a map of provided services
 	provided := make(map[ServiceType]bool)
 	for _, service := range services {
+		if service == nil {
+			continue
+		}
 		s := ServiceTypeFrom(service.Type())
 		if s == "" {
 			return &ErrUnknownServiceType{ServiceType: service.Type()}
@@ -386,6 +385,9 @@ func validateServices(config *PluginConfig, services []PluginService) error {
 
 func (d *DerivedPlugin) attachServices(services []PluginService) error {
 	for _, service := range services {
+		if service == nil {
+			continue
+		}
 		switch ServiceTypeFrom(service.Type()) {
 		case ServiceTypeTTS:
 			if tts, ok := service.(ai.TTS); ok {
@@ -426,12 +428,7 @@ func (d *DerivedPlugin) ChooseDeck(ctx context.Context, query string) (string, e
 }
 
 // GenerateAnkiCards implements AnkiCardGeneratorPlugin interface
-func (d *DerivedPlugin) GenerateAnkiCards(ctx context.Context, query string) ([]ai.AnkiCard, error) {
-	prompt, err := d.config.GetPromptContent()
-	if err != nil {
-		return nil, fmt.Errorf("get prompt content: %w", err)
-	}
-
+func (d *DerivedPlugin) GenerateAnkiCards(ctx context.Context, prompt string, query string) ([]ai.AnkiCard, error) {
 	cards, err := d.generateAnkiCards(ctx, query, prompt)
 	if err != nil {
 		return nil, fmt.Errorf("generate anki cards: %w", err)
@@ -465,10 +462,6 @@ func (d *DerivedPlugin) StoreAnkiCards(deckName string, query string, cards []ai
 				data[ankiField] = card.Front
 			case "back":
 				data[ankiField] = formatBack(card.Back)
-			default:
-				slog.Warn("unknown field mapping",
-					slog.String("anki_field", ankiField),
-					slog.String("plugin_field", pluginField))
 			}
 		}
 

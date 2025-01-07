@@ -67,12 +67,7 @@ func newApplication(cfg *Config) *application {
 // registerCommands registers all the commands for the app.
 func (a *application) registerCommands() *cli.App {
 	a.app.Commands = []*cli.Command{
-		cmd.NewTTSCommand(a.config.APIKeys.OpenAI, a.config.hakiDir),
-		cmd.NewVocabCommand(a.config.APIKeys.OpenAI, a.config.hakiDir),
-		cmd.NewTopicCommand(a.config.APIKeys.OpenAI, a.config.hakiDir),
-		cmd.NewImageCommand(a.config.APIKeys.OpenAI, a.config.hakiDir),
-		cmd.NewAWSCommand(a.config.APIKeys.OpenAI, a.config.hakiDir),
-		cmd.NewCardTestCommand(a.config.APIKeys.OpenAI),
+		cmd.NewPluginCommand(a.config.APIKeys.OpenAI, a.config.hakiDir),
 	}
 	return a.app
 }
@@ -159,7 +154,6 @@ func getHakiDirPath() (string, error) {
 		} else {
 			basePath = home // For Linux, use the home directory
 		}
-		log.Println(home, basePath)
 	default:
 		return "", ErrUnsupportedPlatform
 	}

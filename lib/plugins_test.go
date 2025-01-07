@@ -62,7 +62,7 @@ func TestNewPluginConfigFrom(t *testing.T) {
 	}
 
 	// Test successful parsing
-	config, err := lib.NewPluginConfigFrom(configPath)
+	config, err := lib.NewPluginConfigFrom("./", configPath)
 	if err != nil {
 		t.Fatalf("Failed to parse valid config: %v", err)
 	}
@@ -81,7 +81,7 @@ func TestNewPluginConfigFrom(t *testing.T) {
 		{"Model Name", config.CardType.ModelName, "VocabularyWithAudio"},
 		{"TTS Enabled", config.Services.TTS, true},
 		{"ImageGen Enabled", config.Services.ImageGen, true},
-		{"Output Directory", config.OutputDir, "./data"},
+		{"Output Directory", config.OutputDir, "./"},
 	}
 
 	for _, tt := range tests {
@@ -167,7 +167,7 @@ func TestValidation(t *testing.T) {
 				t.Fatalf("Failed to write test config: %v", err)
 			}
 
-			_, err = lib.NewPluginConfigFrom(tempFile)
+			_, err = lib.NewPluginConfigFrom("./", tempFile)
 			if tt.expectError && err == nil {
 				t.Error("Expected error but got nil")
 			}
@@ -343,7 +343,7 @@ func TestDerivedPluginGenerateCards(t *testing.T) {
 				t.Fatalf("Failed to create plugin: %v", err)
 			}
 
-			cards, err := plugin.GenerateAnkiCards(context.Background(), "test query")
+			cards, err := plugin.GenerateAnkiCards(context.Background(), "test query", "test query")
 
 			if tt.expectError {
 				if err == nil {
