@@ -15,6 +15,8 @@ type TTS interface {
 	GenerateWav(ctx context.Context, text string) ([]byte, error)
 	// Generate speech from text. The voice and format can be specified. TODO: make this universal when we add more providers.
 	Generate(ctx context.Context, text string, voice openai.SpeechVoice, format openai.SpeechResponseFormat) ([]byte, error)
+	// Type returns the type of the service.
+	Type() string
 }
 
 // TTSService is a service for generating text-to-speech audio.
@@ -27,6 +29,10 @@ func NewTTSService(openAIApiKey string) TTS {
 	return &TTSService{
 		*NewOpenAIClient(openAIApiKey, TTSModel1),
 	}
+}
+
+func (tts *TTSService) Type() string {
+	return "tts"
 }
 
 // Generate speech from text. The voice and format can be specified.

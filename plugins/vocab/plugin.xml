@@ -1,0 +1,27 @@
+<plugin>
+    <identifier>vocab</identifier>
+    <description>Vocabulary cards with audio and images</description>
+    <prompt>
+        <path>plugins/vocab/prompt.txt</path>
+    </prompt>
+    <generation>
+        <mode>single</mode>
+    </generation>
+    <deck>
+        <filter>Vocabulary::</filter>
+    </deck>
+    <card_type>
+        <model_name>VocabularyWithAudio</model_name>
+        <fields>
+            <field anki="Question">front</field>
+            <field anki="Definition">back</field>
+            <field anki="Audio">audio_front</field>
+            <field anki="Picture">image_front</field>
+        </fields>
+    </card_type>
+    <services>
+        <tts>true</tts>
+        <image_gen>true</image_gen>
+    </services>
+    <output_dir>./</output_dir>
+</plugin>

@@ -11,6 +11,8 @@ import (
 type ImageGen interface {
 	// Generate generates speech from text and returns the audio as an MP3 file.
 	Generate(ctx context.Context, text string) ([]byte, error)
+	// Type returns the type of the service.
+	Type() string
 }
 
 // ImageGenService is a service for generating text-to-speech audio.
@@ -27,6 +29,10 @@ func NewImageGenService(openAIApiKey string) ImageGen {
 
 func wordToPrompt(word string) string {
 	return fmt.Sprintf("Please create an illustration for the word \"%s\" to help visually represent its meaning for my Anki card.", word)
+}
+
+func (svc *ImageGenService) Type() string {
+	return "image_gen"
 }
 
 func (svc *ImageGenService) Generate(ctx context.Context, word string) ([]byte, error) {

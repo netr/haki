@@ -3,10 +3,12 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"log"
 	"strings"
-	"time"
 
 	"github.com/urfave/cli/v2"
+
+	"github.com/netr/haki/lib"
 
 	"github.com/netr/haki/ai"
 )
@@ -77,31 +79,41 @@ func (a VocabAction) splitWords(w string) []string {
 }
 
 func runVocab(apiKey, query, outputDir string) error {
-	cardCreator, err := ai.NewCardCreator(ai.OpenAI, apiKey)
+	config, err := lib.NewPluginConfigFrom("plugins/vocab/plugin.xml")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Create services
+	cardCreator, err := ai.NewOpenAICardCreator(apiKey)
 	if err != nil {
 		return fmt.Errorf("new openai api provider: %w", err)
 	}
 	ttsService := ai.NewTTSService(apiKey)
 	imageGenService := ai.NewImageGenService(apiKey)
-	plugin := newVocabPlugin(cardCreator, ttsService, imageGenService, outputDir)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
-	defer cancel()
+	// Create plugin
+	plugin, err := lib.NewDerivedPlugin(config, cardCreator, ttsService, imageGenService)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	deckName, err := plugin.ChooseDeck(ctx, query)
+	deckName, err := plugin.ChooseDeck(context.Background(), query)
 	if err != nil {
 		return fmt.Errorf("run vocab: %w", err)
 	}
 
-	cards, err := plugin.GenerateAnkiCards(ctx, query)
+	// Use the plugin
+	cards, err := plugin.GenerateAnkiCards(context.Background(), query)
 	if err != nil {
 		return fmt.Errorf("run vocab: %w", err)
 	}
 
-	if err := plugin.StoreAnkiCards(deckName, cards); err != nil {
+	if err := plugin.StoreAnkiCards(deckName, query, cards); err != nil {
 		return fmt.Errorf("run vocab: %w", err)
 	}
 
 	PrintCards(cards, true)
+
 	return nil
 }
