@@ -555,7 +555,7 @@ func replaceBold(text string) string {
 }
 
 func formatBack(data string) string {
-	if !strings.Contains(strings.ToLower(data), "<") {
+	if !strings.Contains(strings.ToLower(data), "<br>") {
 		data = strings.ReplaceAll(data, "\n", "<br>\n")
 	}
 	data = strings.ReplaceAll(data, "\\<", "<")

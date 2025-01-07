@@ -28,7 +28,6 @@ func NewVocabCommand(apiKey, outputDir string) *cli.Command {
 			NewVocabAction(
 				apiKey,
 				"vocab",
-				outputDir,
 				[]string{"words", "service", "model", "debug"},
 			)),
 	}
@@ -36,23 +35,21 @@ func NewVocabCommand(apiKey, outputDir string) *cli.Command {
 
 type VocabAction struct {
 	Action
-	outputDir string
 }
 
-func NewVocabAction(apiKey, name, outputDir string, flags []string) *VocabAction {
+func NewVocabAction(apiKey, name string, flags []string) *VocabAction {
 	return &VocabAction{
 		Action: Action{
 			flags:  flags,
 			apiKey: apiKey,
 			name:   name,
 		},
-		outputDir: outputDir,
 	}
 }
 
 func (a VocabAction) Run(args ...interface{}) error {
 	if len(args) < 1 {
-		return fmt.Errorf("action run: %w", ErrQueryRequired)
+		return fmt.Errorf("action run: %w", lib.ErrQueryRequired)
 	}
 	words := args[0].(string)
 	if words == "" {
@@ -60,7 +57,7 @@ func (a VocabAction) Run(args ...interface{}) error {
 	}
 
 	for _, word := range a.splitWords(words) {
-		if err := runVocab(a.apiKey, word, a.outputDir); err != nil {
+		if err := runVocab(a.apiKey, word); err != nil {
 			return err
 		}
 	}
@@ -78,7 +75,7 @@ func (a VocabAction) splitWords(w string) []string {
 	return words
 }
 
-func runVocab(apiKey, query, outputDir string) error {
+func runVocab(apiKey, query string) error {
 	config, err := lib.NewPluginConfigFrom("plugins/vocab/plugin.xml")
 	if err != nil {
 		log.Fatal(err)
@@ -113,7 +110,6 @@ func runVocab(apiKey, query, outputDir string) error {
 		return fmt.Errorf("run vocab: %w", err)
 	}
 
-	PrintCards(cards, true)
-
+	lib.PrintCards(cards, true)
 	return nil
 }

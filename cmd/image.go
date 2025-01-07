@@ -45,7 +45,7 @@ func NewImageAction(apiKey, outputDir string, flags []string) *ImageAction {
 
 func (i ImageAction) Run(args ...interface{}) error {
 	if len(args) < 1 {
-		return fmt.Errorf("action run (%s): %w", i.Name(), ErrQueryRequired)
+		return fmt.Errorf("action run (%s): %w", i.Name(), lib.ErrQueryRequired)
 	}
 	prompt := fmt.Sprintf("Please create an illustration for the word \"%s\" to help visually represent its meaning for my Anki card.", args[0].(string))
 	outPath := fmt.Sprintf("%s/data/%s.webp", i.OutputDir, uuid.NewString())

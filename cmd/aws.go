@@ -13,9 +13,11 @@ import (
 	"github.com/netr/haki/ai"
 )
 
-func NewTopicCommand(apiKey, outputDir string) *cli.Command {
+const TrueString = "true"
+
+func NewAWSCommand(apiKey, outputDir string) *cli.Command {
 	return &cli.Command{
-		Name:      "topic",
+		Name:      "aws",
 		Usage:     "GenerateAnkiCards a topical Anki card using the specified topic.",
 		ArgsUsage: "--topic <topic> --service <service> --model <model> --debug",
 		Flags: []cli.Flag{
@@ -25,30 +27,20 @@ func NewTopicCommand(apiKey, outputDir string) *cli.Command {
 			newDebugFlag(),
 		},
 		Action: actionFn(
-			NewTopicAction(
+			NewAWSAction(
 				apiKey,
-				"topic",
+				"aws",
 				[]string{"topic", "service", "model", "debug"},
 			)),
 	}
 }
 
-func newTopicFlag() *cli.StringFlag {
-	return &cli.StringFlag{
-		Name:     "topic",
-		Aliases:  []string{"t"},
-		Value:    "",
-		Required: true,
-		Usage:    "topic to create a card for",
-	}
-}
-
-type TopicAction struct {
+type AWSAction struct {
 	Action
 }
 
-func NewTopicAction(apiKey, name string, flags []string) *TopicAction {
-	return &TopicAction{
+func NewAWSAction(apiKey, name string, flags []string) *AWSAction {
+	return &AWSAction{
 		Action{
 			flags:  flags,
 			apiKey: apiKey,
@@ -57,7 +49,7 @@ func NewTopicAction(apiKey, name string, flags []string) *TopicAction {
 	}
 }
 
-func (a TopicAction) Run(args ...interface{}) error {
+func (a AWSAction) Run(args ...interface{}) error {
 	if len(args) < 1 {
 		return fmt.Errorf("action run: %w", lib.ErrQueryRequired)
 	}
@@ -67,19 +59,19 @@ func (a TopicAction) Run(args ...interface{}) error {
 	debug := args[3].(string)
 
 	skipSave := false
-	if debug == "true" {
+	if debug == TrueString {
 		skipSave = true
 	}
 
 	slog.Info("action",
-		slog.String("action", "topic"),
+		slog.String("action", "aws"),
 		slog.String("topic", topic),
 		slog.String("service", service),
 		slog.String("model", model),
 		slog.String("debug", debug),
 	)
 
-	if err := runTopic(a.apiKey, topic, model, skipSave); err != nil {
+	if err := runAWS(a.apiKey, topic, model, skipSave); err != nil {
 		return err
 	}
 	return nil
@@ -88,8 +80,8 @@ func (a TopicAction) Run(args ...interface{}) error {
 // runTopic creates an anki client, card creator and builds the anki card.
 // doesn't need to be part of the action topic struct because the problem terminates after finishing.
 // if we make this a long running program, we should put this in the struct and hold references to the client/creator.
-func runTopic(apiKey, query, model string, skipSave bool) error {
-	config, err := lib.NewPluginConfigFrom("plugins/topic/plugin.xml")
+func runAWS(apiKey, query, model string, skipSave bool) error {
+	config, err := lib.NewPluginConfigFrom("plugins/aws/plugin.xml")
 	if err != nil {
 		log.Fatal(err)
 	}

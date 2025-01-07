@@ -71,6 +71,7 @@ func (a *application) registerCommands() *cli.App {
 		cmd.NewVocabCommand(a.config.APIKeys.OpenAI, a.config.hakiDir),
 		cmd.NewTopicCommand(a.config.APIKeys.OpenAI, a.config.hakiDir),
 		cmd.NewImageCommand(a.config.APIKeys.OpenAI, a.config.hakiDir),
+		cmd.NewAWSCommand(a.config.APIKeys.OpenAI, a.config.hakiDir),
 		cmd.NewCardTestCommand(a.config.APIKeys.OpenAI),
 	}
 	return a.app
