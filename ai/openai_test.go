@@ -17,7 +17,7 @@ func Test_NewAICardCreator_OpenAI_DefaultModel(t *testing.T) {
 		t.Fatal("openai model name is nil")
 	}
 
-	if modelName.String() != ai.GPT4o20240806.String() {
-		t.Fatalf("openai model name is not gpt-4-o-2024-08-06: %s", modelName.String())
+	if modelName.String() != ai.GPT4o20241120.String() {
+		t.Fatalf("openai model name is not gpt-4-o-2024-11-20: %s", modelName.String())
 	}
 }

@@ -449,7 +449,7 @@ func (d *DerivedPlugin) validateGeneratedCards(cards []ai.AnkiCard) error {
 }
 
 // StoreAnkiCards implements AnkiCardGeneratorPlugin interface
-func (d *DerivedPlugin) StoreAnkiCards(deckName string, query string, cards []ai.AnkiCard) error {
+func (d *DerivedPlugin) StoreAnkiCards(deckName string, query string, cards []ai.AnkiCard, allowDuplicates bool) error {
 	fieldMapping := d.config.GetFieldMapping()
 
 	for _, card := range cards {
@@ -465,7 +465,7 @@ func (d *DerivedPlugin) StoreAnkiCards(deckName string, query string, cards []ai
 			}
 		}
 
-		note := anki.NewNoteBuilder(deckName, d.config.CardType.ModelName, data)
+		note := anki.NewNoteBuilder(deckName, d.config.CardType.ModelName, data, allowDuplicates)
 
 		// Add any additional services
 		for ankiField, pluginField := range fieldMapping {

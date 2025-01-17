@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 )
 
 // SaveFile saves data to a file
@@ -84,4 +85,30 @@ func GetEnvInt(key string, defaultValue int) int {
 		return defaultValue
 	}
 	return ivalue
+}
+
+func SplitQuery(query string) []string {
+	// If the string is empty, return an empty slice
+	if strings.TrimSpace(query) == "" {
+		return []string{}
+	}
+
+	// Split by comma if it exists
+	var parts []string
+	if strings.Contains(query, ",") {
+		parts = strings.Split(query, ",")
+	} else {
+		parts = []string{query}
+	}
+
+	// Clean up each part
+	result := make([]string, 0, len(parts))
+	for _, part := range parts {
+		trimmed := strings.TrimSpace(part)
+		if trimmed != "" {
+			result = append(result, trimmed)
+		}
+	}
+
+	return result
 }

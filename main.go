@@ -68,6 +68,7 @@ func newApplication(cfg *Config) *application {
 func (a *application) registerCommands() *cli.App {
 	a.app.Commands = []*cli.Command{
 		cmd.NewPluginCommand(a.config.APIKeys.OpenAI, a.config.hakiDir),
+		cmd.NewUpdaterCommand(a.config.APIKeys.OpenAI, a.config.hakiDir),
 	}
 	return a.app
 }

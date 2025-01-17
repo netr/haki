@@ -56,7 +56,7 @@ type OpenAICardCreator struct {
 
 // NewOpenAICardCreator creates a new OpenAICardCreator with the given API key and an optional model type.
 func NewOpenAICardCreator(apiKey string, modelType ...OpenAIModelName) (*OpenAICardCreator, error) {
-	mt := GPT4o20240806
+	mt := GPT4o20241120
 	if len(modelType) > 0 {
 		mt = modelType[0]
 	}
@@ -136,6 +136,67 @@ func (s *OpenAICardCreator) ChooseDeck(ctx context.Context, deckNames []string, 
 	}
 
 	return result["Deck"], nil
+}
+
+// ChooseDeck uses the OpenAI API to select a deck based on provided deck names and text.
+func (s *OpenAICardCreator) ExtractVocabularyEntity(ctx context.Context, query string) (string, error) {
+	resp, err := s.client.createChatCompletion(
+		ctx,
+		openai.ChatCompletionRequest{
+			Model: s.ModelName().String(),
+			Messages: []openai.ChatCompletionMessage{
+				{
+					Role:    openai.ChatMessageRoleSystem,
+					Content: "Please extract the vocabulary word from the given query",
+				},
+				{
+					Role:    openai.ChatMessageRoleUser,
+					Content: query,
+				},
+			},
+			Tools: []openai.Tool{
+				{
+					Type: openai.ToolTypeFunction,
+					Function: &openai.FunctionDefinition{
+						Name:   "vocabulary_word_extractor",
+						Strict: true,
+						Parameters: &jsonschema.Definition{
+							Type: jsonschema.Object,
+							Properties: map[string]jsonschema.Definition{
+								"VocabularyWord": {
+									Type: jsonschema.String,
+								},
+							},
+							Required:             []string{"VocabularyWord"},
+							AdditionalProperties: false,
+						},
+					},
+				},
+			},
+			ToolChoice: openai.ToolChoice{
+				Type: openai.ToolTypeFunction,
+				Function: openai.ToolFunction{
+					Name: "vocabulary_word_extractor",
+				},
+			},
+		},
+	)
+	if err != nil {
+		return "", err
+	}
+
+	var result = make(map[string]string)
+	err = json.Unmarshal([]byte(resp.Choices[0].Message.ToolCalls[0].Function.Arguments), &result)
+	if err != nil {
+		return "", err
+	}
+	for _, key := range []string{"VocabularyWord"} {
+		if _, ok := result[key]; !ok {
+			return "", ErrMissingKey{Key: key}
+		}
+	}
+
+	return result["VocabularyWord"], nil
 }
 
 // Create uses the OpenAI API to generate AnkiCard's (front and back) for the given deck and text.

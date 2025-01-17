@@ -26,7 +26,7 @@ func newPluginFlag() *cli.StringFlag {
 	return &cli.StringFlag{
 		Name:     "plugin",
 		Aliases:  []string{"p"},
-		Usage:    "Name of the plugin to use",
+		Usage:    "name of the plugin to use",
 		Required: true,
 	}
 }
@@ -35,7 +35,7 @@ func newQueryFlag() *cli.StringFlag {
 	return &cli.StringFlag{
 		Name:     "query",
 		Aliases:  []string{"q"},
-		Usage:    "Query to generate cards for",
+		Usage:    "comma-separated list of search queries QUERY[,QUERY...]",
 		Required: true,
 	}
 }

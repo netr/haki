@@ -70,8 +70,15 @@ func (a PluginAction) Run(args ...interface{}) error {
 		slog.String("debug", debug),
 	)
 
-	if err := runPlugin(a.apiKey, pluginName, query, model, a.outputDir, skipSave); err != nil {
-		return err
+	queries := lib.SplitQuery(query)
+	for _, query := range queries {
+		if err := runPlugin(a.apiKey, pluginName, query, model, a.outputDir, skipSave); err != nil {
+			slog.Error("failed creating card",
+				slog.String("plugin", pluginName),
+				slog.String("query", query),
+				slog.String("model", model),
+			)
+		}
 	}
 	return nil
 }
@@ -127,7 +134,7 @@ func runPlugin(apiKey, pluginName, query, model, outputDir string, skipSave bool
 
 	// Store cards if not in debug mode
 	if !skipSave {
-		if err := plugin.StoreAnkiCards(deckName, query, cards); err != nil {
+		if err := plugin.StoreAnkiCards(deckName, query, cards, false); err != nil {
 			return fmt.Errorf("storing cards: %w", err)
 		}
 	}

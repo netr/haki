@@ -10,17 +10,85 @@ func NewNoteService(client *Client) *NoteService {
 	return &NoteService{client}
 }
 
+// NoteParams contains the parameters for adding a new note
+type AddNoteParams struct {
+	Note Note `json:"note"`
+}
+
 func (svc *NoteService) Add(note Note) (float64, error) {
 	var id float64
-	if err := svc.client.sendAndUnmarshal("addNote", NoteParams{Note: note}, &id); err != nil {
-		return 0, fmt.Errorf("addNote: %w", err)
+	if err := svc.client.sendAndUnmarshal("addNote", AddNoteParams{Note: note}, &id); err != nil {
+		return 0, fmt.Errorf("add note: %w", err)
 	}
 	return id, nil
 }
 
-// NoteParams contains the parameters for adding a new note
-type NoteParams struct {
-	Note Note `json:"note"`
+type FindNoteParams struct {
+	Query string `json:"query"`
+}
+
+func (svc *NoteService) FindNotes(query string) ([]int64, error) {
+	var res []int64
+	if err := svc.client.sendAndUnmarshal("findNotes", FindNoteParams{Query: query}, &res); err != nil {
+		return nil, fmt.Errorf("find notes: %w", err)
+	}
+
+	return res, nil
+}
+
+type GetNoteInfosParams struct {
+	Notes []int64 `json:"notes"`
+}
+
+func (svc *NoteService) GetNoteInfos(noteIDs []int64) ([]NoteInfoResult, error) {
+	var res []NoteInfoResult
+	if err := svc.client.sendAndUnmarshal("notesInfo", GetNoteInfosParams{Notes: noteIDs}, &res); err != nil {
+		return nil, fmt.Errorf("get note infos: %w", err)
+	}
+
+	return res, nil
+}
+
+type DeleteNotesParams struct {
+	Notes []int64 `json:"notes"`
+}
+
+func (svc *NoteService) DeleteNotes(noteIDs []int64) error {
+	var res interface{}
+	if err := svc.client.sendAndUnmarshal("deleteNotes", DeleteNotesParams{Notes: noteIDs}, &res); err != nil {
+		return fmt.Errorf("delete notes: %w", err)
+	}
+
+	return nil
+}
+
+type FindNotesResult struct {
+	NoteIDs []int64
+}
+
+type NoteInfoResult struct {
+	NoteID    int64                    `json:"noteId"`
+	Profile   string                   `json:"profile"`
+	ModelName string                   `json:"modelName"`
+	Tags      []string                 `json:"tags"`
+	Fields    map[string]NoteInfoField `json:"fields"`
+	Mod       int64                    `json:"mod"`
+	Cards     []int64                  `json:"cards"`
+}
+
+func (r NoteInfoResult) HasField(field string) bool {
+	if val, ok := r.Fields[field]; !ok {
+		return false
+	} else if val.Value == "" {
+		return false
+	}
+
+	return true
+}
+
+type NoteInfoField struct {
+	Value string `json:"value"`
+	Order int64  `json:"order"`
 }
 
 // Note represents an Anki note
@@ -65,14 +133,14 @@ type NoteBuilder struct {
 }
 
 // NewNoteBuilder creates a new NoteBuilder with minimum required fields and sensible defaults
-func NewNoteBuilder(deckName, modelName string, fields map[string]interface{}) *NoteBuilder {
+func NewNoteBuilder(deckName, modelName string, fields map[string]interface{}, allowDuplicates bool) *NoteBuilder {
 	return &NoteBuilder{
 		note: Note{
 			DeckName:  deckName,
 			ModelName: modelName,
 			Fields:    fields,
 			Options: NoteOptions{
-				AllowDuplicate: false,
+				AllowDuplicate: allowDuplicates,
 				DuplicateScope: "deck",
 				DuplicateScopeOptions: DuplicateScopeOptions{
 					DeckName:       deckName,
