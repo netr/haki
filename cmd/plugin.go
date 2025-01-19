@@ -70,9 +70,19 @@ func (a PluginAction) Run(args ...interface{}) error {
 		slog.String("debug", debug),
 	)
 
-	queries := lib.SplitQuery(query)
+	// Load plugin configuration
+	path := filepath.Join(a.outputDir, fmt.Sprintf("plugins/%s/plugin.xml", pluginName))
+	config, err := lib.NewPluginConfigFrom(a.outputDir, path)
+	if err != nil {
+		return fmt.Errorf("loading plugin config: %w", err)
+	}
+
+	queries := []string{query}
+	if config.Generation.Mode == "single" {
+		queries = lib.SplitQuery(query)
+	}
 	for _, query := range queries {
-		if err := runPlugin(a.apiKey, pluginName, query, model, a.outputDir, skipSave); err != nil {
+		if err := runPlugin(config, a.apiKey, query, model, skipSave); err != nil {
 			slog.Error("failed creating card",
 				slog.String("plugin", pluginName),
 				slog.String("query", query),
@@ -83,15 +93,8 @@ func (a PluginAction) Run(args ...interface{}) error {
 	return nil
 }
 
-func runPlugin(apiKey, pluginName, query, model, outputDir string, skipSave bool) error {
+func runPlugin(config *lib.PluginConfig, apiKey, query, model string, skipSave bool) error {
 	timeStart := time.Now()
-
-	// Load plugin configuration
-	path := filepath.Join(outputDir, fmt.Sprintf("plugins/%s/plugin.xml", pluginName))
-	config, err := lib.NewPluginConfigFrom(outputDir, path)
-	if err != nil {
-		return fmt.Errorf("loading plugin config: %w", err)
-	}
 
 	// Create base services
 	cardCreator, err := ai.NewOpenAICardCreator(apiKey)
@@ -115,7 +118,7 @@ func runPlugin(apiKey, pluginName, query, model, outputDir string, skipSave bool
 		return fmt.Errorf("creating plugin: %w", err)
 	}
 
-	prompt, err := config.GetPromptContentFrom(outputDir)
+	prompt, err := config.GetPromptContentFrom(config.OutputDir)
 	if err != nil {
 		return fmt.Errorf("get prompt content: %w", err)
 	}
@@ -142,7 +145,7 @@ func runPlugin(apiKey, pluginName, query, model, outputDir string, skipSave bool
 	lib.PrintCards(cards, true)
 
 	slog.Info("plugin",
-		slog.String("plugin", pluginName),
+		slog.String("plugin", config.Identifier),
 		slog.String("query", query),
 		slog.String("model", model),
 		slog.String("deck", deckName),
