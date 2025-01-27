@@ -17,7 +17,11 @@ haki vocab --word "cacophony"
 
 - [x] Automatically fetches the definition and example sentence.
 - [x] Creates a TTS of the word using OpenAI's tts-1 model.
-- [ ] Automatically fetch the pronunciation of the word.
+- [x] Automatically fetch the pronunciation of the word.
+- [x] Switch commands into a more generalized plugin model.
+- [ ] Download stock plugins feature (grab from github).
+- [ ] Create TUI for managing plugins.
+- [ ] Refactor plugin config and prompt system to be more user friendly.
 
 ## Development
 
