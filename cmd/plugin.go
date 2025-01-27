@@ -84,6 +84,7 @@ func (a PluginAction) Run(args ...interface{}) error {
 	for _, query := range queries {
 		if err := runPlugin(config, a.apiKey, query, model, skipSave); err != nil {
 			slog.Error("failed creating card",
+				slog.String("error", err.Error()),
 				slog.String("plugin", pluginName),
 				slog.String("query", query),
 				slog.String("model", model),
