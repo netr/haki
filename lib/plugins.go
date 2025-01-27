@@ -239,13 +239,13 @@ func (t *BasePlugin) generateAnkiCards(ctx context.Context, query string, prompt
 func (t *BasePlugin) chooseDeck(ctx context.Context, query string, decks []string, createIfNotExists bool) (string, error) {
 	deckName, err := t.ankiAI.ChooseDeck(ctx, decks, fmt.Sprintf("Which deck should I use for the topic: %s", query))
 	if err != nil {
-		return "", fmt.Errorf("choose deck: %w", err)
+		return "", err
 	}
 
 	if createIfNotExists {
 		if !slices.Contains(decks, deckName) {
 			if err := t.ankiClient.DeckNames().Create(deckName); err != nil {
-				return "", fmt.Errorf("choose deck (%s): %w", deckName, err)
+				return "", err
 			}
 		}
 	}
@@ -431,7 +431,7 @@ func (d *DerivedPlugin) ChooseDeck(ctx context.Context, query string) (string, e
 func (d *DerivedPlugin) GenerateAnkiCards(ctx context.Context, prompt string, query string) ([]ai.AnkiCard, error) {
 	cards, err := d.generateAnkiCards(ctx, query, prompt)
 	if err != nil {
-		return nil, fmt.Errorf("generate anki cards: %w", err)
+		return nil, err
 	}
 
 	if err := d.validateGeneratedCards(cards); err != nil {
@@ -507,7 +507,7 @@ func (d *DerivedPlugin) StoreAnkiCards(deckName string, query string, cards []ai
 
 		id, err := d.ankiClient.Notes().Add(note.Build())
 		if err != nil {
-			return fmt.Errorf("store anki cards: %w", err)
+			return err
 		}
 
 		slog.Info("note added",
