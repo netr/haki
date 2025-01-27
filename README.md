@@ -8,12 +8,27 @@ This tool uses the AnkiConnect API and AI APIs to create Anki cards efficiently.
 go install github.com/netr/haki@latest
 ```
 
-## Features / Commands
+## Setup stock plugins
+
+```bash
+git clone https://github.com/netr/haki
+cd haki
+cp -r plugins/ ~/.config/haki/
+```
+
+## Stock plugins
 
 ### Vocabulary Cards
 ```bash
-haki vocab --word "cacophony"
+haki plugin -p "vocab" -q "cacophony" # Generates image, TTS, and anki card
 ```
+
+### Topic Cards
+```bash
+haki plugin -p "topic" -q "cacophony"
+```
+
+## Todo
 
 - [x] Automatically fetches the definition and example sentence.
 - [x] Creates a TTS of the word using OpenAI's tts-1 model.
