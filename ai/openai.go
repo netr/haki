@@ -365,6 +365,7 @@ const (
 	TTSModel1             OpenAIModelName = "tts-1"
 	TTSModel1HD           OpenAIModelName = "tts-1-hd"
 	TTSModelCanary        OpenAIModelName = "canary-tts"
+	TTSGPT4oMini          OpenAIModelName = "gpt-4o-mini-tts"
 )
 
 func (m OpenAIModelName) String() string {

@@ -27,7 +27,7 @@ type TTSService struct {
 // NewTTSService creates a new TTS service with the given OpenAI API key.
 func NewTTSService(openAIApiKey string) TTS {
 	return &TTSService{
-		*NewOpenAIClient(openAIApiKey, TTSModel1),
+		*NewOpenAIClient(openAIApiKey, TTSGPT4oMini),
 	}
 }
 
@@ -43,7 +43,7 @@ func (tts *TTSService) Generate(ctx context.Context, text string, voice openai.S
 		ctx,
 		openai.CreateSpeechRequest{
 			Model:          openai.SpeechModel(tts.modelType),
-			Input:          fmt.Sprintf("\n[pause]\n%s", text),
+			Input:          fmt.Sprintf("\n%s", text),
 			Voice:          voice,
 			ResponseFormat: format,
 			Speed:          1,
@@ -63,10 +63,10 @@ func (tts *TTSService) Generate(ctx context.Context, text string, voice openai.S
 
 // GenerateMP3 generates speech from text and returns the audio as an MP3 file.
 func (tts *TTSService) GenerateMP3(ctx context.Context, text string) ([]byte, error) {
-	return tts.Generate(ctx, text, openai.VoiceAlloy, openai.SpeechResponseFormatMp3)
+	return tts.Generate(ctx, text, openai.SpeechVoice("coral"), openai.SpeechResponseFormatMp3)
 }
 
 // GenerateWav generates speech from text and returns the audio as a WAV file.
 func (tts *TTSService) GenerateWav(ctx context.Context, text string) ([]byte, error) {
-	return tts.Generate(ctx, text, openai.VoiceAlloy, openai.SpeechResponseFormatWav)
+	return tts.Generate(ctx, text, openai.SpeechVoice("coral"), openai.SpeechResponseFormatWav)
 }
