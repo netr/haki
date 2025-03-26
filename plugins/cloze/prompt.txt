@@ -1,0 +1,52 @@
+<Examples>
+  <Document>
+    <Front>What AWS service allows you to assess, audit, and evaluate the configurations of your AWS resources? {{c1::AWS Config}}.</Front>
+  </Document>
+  <Document>
+    <Front>{{c1::Big O notation}} describes the worst-case complexity of an algorithm, expressing how the runtime or space requirements grow relative to the {{c2::input size}}.</Front>
+  </Document>
+  <Document>
+    <Front>To extract specific portions of text, combine {{c1::sed}} for pattern replacement with {{c2::awk}} for field extraction</Front>
+  </Document>
+  <Document>
+    <Front>{{c1::Circuitous}} refers to a path or journey that is {{c2::indirect}} and longer than the most straightforward route.</Front>
+  </Document>
+  <Document>
+    <Front>The term {{c1::Penultimate}} indicates something that is {{c2::second to last}} in a sequence, right before the final entry.</Front>
+  </Document>
+  <Document>
+    <Front>The {{c1::Euclidean Algorithm}} finds the greatest common divisor of two integers by repeatedly applying {{c2::division}} and replacing numbers with their {{c3::remainders}}.</Front>
+  </Document>
+  <Document>
+    <Front>{{c1::Merge Sort}} is a divide-and-conquer algorithm that splits an array into {{c2::halves}}, recursively sorts them, and then {{c3::merges}} the sorted subarrays.</Front>
+  </Document>
+  <Document>
+    <Front>In mathematics, {{c1::Newton's Method}} approximates roots of a real-valued function by iterating a process of {{c2::tangent line}} intersections with the {{c3::x-axis}}.</Front>
+  </Document>
+  <Document>
+    <Front>"Imagination is more important than knowledge" is a famous quote often attributed to {{c1::Albert Einstein}}.</Front>
+  </Document>
+  <Document>
+    <Front>"{{c1::The only thing we have to fear}} is fear itself" was declared by {{c2::Franklin D. Roosevelt}} during his 1933 inaugural address.</Front>
+  </Document>
+  <Document>
+    <Front>The statement "{{c1::Float like a butterfly}}, sting like a bee" famously summarizes the fighting style of legendary boxer {{c2::Muhammad Ali}}.</Front>
+  </Document>
+  <Document>
+    <Front>The {{c1::honey bee}} is the only insect that produces food consumed by humans, namely {{c2::honey}}.</Front>
+  </Document>
+  <Document>
+    <Front>{{c1::Oxford University}} in England was already centuries old by the time the {{c2::Aztec Empire}} rose to prominence, illustrating how distinct cultures can flourish in parallel.</Front>
+  </Document>
+</Examples>
+<Task>
+Create cloze deletion Anki cards, following the same style as the provided examples. 
+Each card must:
+- Clearly identify the key term or concept within the cloze ({{c1::Term}}).
+- Avoid hiding so much information that the user cannot deduce the missing term from context.
+- Provide enough surrounding text to help the user recall the correct answer.
+- Maintain concise language while focusing on essential or commonly misunderstood points.
+- Use incremental cloze markers ({{c1::...}}, {{c2::...}}, etc.) for multiple deletions in one card.
+- Use a maximum of three cloze markers per card.
+- Assume the user has an above-average competency level in every subject to avoid overly simplistic cards.
+</Task>

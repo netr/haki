@@ -1,0 +1,21 @@
+<plugin>
+    <identifier>cloze</identifier>
+    <description>Creates cloze deletion cards for any topic</description>
+    <prompt>
+        <path>plugins/cloze/prompt.txt</path>
+    </prompt>
+    <generation>
+        <mode>multiple</mode>
+    </generation>
+    <deck>
+        <filter>Cloze da Boz::</filter>
+    </deck>
+    <card_type>
+        <model_name>Cloze</model_name>
+        <fields>
+            <field anki="Text">front</field>
+            <field anki="Back Extra">back</field>
+        </fields>
+    </card_type>
+    <output_dir>./</output_dir>
+</plugin>
