@@ -215,7 +215,7 @@ func (s *OpenAICardCreator) GenerateAnkiCards(ctx context.Context, deckName stri
 				},
 				{
 					Role:    openai.ChatMessageRoleUser,
-					Content: text,
+					Content: `Query: ` + text,
 				},
 			},
 			Tools: []openai.Tool{
@@ -319,6 +319,7 @@ func isValidOpenAIModelName(name string) bool {
 	case string(TTSModel1):
 	case string(TTSModel1HD):
 	case string(TTSModelCanary):
+	case string(TTSGPT4oMini):
 	default:
 		return false
 	}
